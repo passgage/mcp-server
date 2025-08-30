@@ -69,16 +69,16 @@ class PassgageMCPServer {
             name.startsWith('passgage_logout') || name.startsWith('passgage_auth_status') ||
             name.startsWith('passgage_set_company_mode') || name.startsWith('passgage_switch_to') ||
             name.startsWith('passgage_get_auth_modes')) {
-          result = await handleAuthTool(name, args || {}, this.client);
+          result = await handleAuthTool(name, args ?? {}, this.client);
         } else if (name.startsWith('passgage_list_') || name.startsWith('passgage_get_') ||
                    name.startsWith('passgage_create_') || name.startsWith('passgage_update_') ||
                    name.startsWith('passgage_delete_')) {
-          result = await handleCRUDTool(name, args || {}, this.client);
+          result = await handleCRUDTool(name, args ?? {}, this.client);
         } else if (name.startsWith('passgage_upload_file') || name.startsWith('passgage_approve_') ||
                    name.startsWith('passgage_bulk_') || name.startsWith('passgage_assign_') ||
                    name.startsWith('passgage_track_') || name.startsWith('passgage_search') ||
                    name.startsWith('passgage_export_') || name.startsWith('passgage_get_dashboard_')) {
-          result = await handleSpecializedTool(name, args || {}, this.client);
+          result = await handleSpecializedTool(name, args ?? {}, this.client);
         } else {
           throw new Error(`Unknown tool: ${name}`);
         }
@@ -127,7 +127,8 @@ class PassgageMCPServer {
     if (authContext.mode === 'company') {
       console.error('Company mode: Full admin access to all company data');
     } else if (authContext.mode === 'user') {
-      console.error(`User mode: Personal access for ${authContext.userInfo?.email}`);
+      const userEmail = authContext.userInfo ? authContext.userInfo.email : 'unknown';
+      console.error(`User mode: Personal access for ${userEmail}`);
     } else {
       console.error('No authentication mode active. Use authentication tools to login.');
     }

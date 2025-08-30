@@ -2,7 +2,28 @@
   "permissions": {
     "allow": [
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(npm run build:*)",
+      "Read(/Users/gokhanalmas/Library/Logs/Claude/**)",
+      "Read(/Users/gokhanalmas/Library/Logs/Claude/**)",
+      "Read(/Users/gokhanalmas/Library/Logs/Claude/**)",
+      "Read(/Users/gokhanalmas/Library/Logs/Claude/**)",
+      "Read(/Users/gokhanalmas/Library/Logs/Claude/**)",
+      "Bash(find:*)",
+      "Read(/Users/gokhanalmas/Library/Logs/Claude/**)",
+      "Bash(node:*)",
+      "Read(/Users/gokhanalmas/Library/Logs/Claude/**)",
+      "Read(/Users/gokhanalmas/Library/Logs/Claude/**)",
+      "Bash(npm run type-check:*)",
+      "Bash(npm run lint)",
+      "Bash(npm test)",
+      "Bash(echo \"Exit code: $?\")",
+      "Bash(timeout:*)",
+      "Bash(echo:*)",
+      "Read(/Users/gokhanalmas/Library/Logs/Claude/**)",
+      "Bash(npm ls:*)",
+      "Bash(npm view:*)",
+      "Bash(npm install)"
     ],
     "deny": [],
     "ask": []

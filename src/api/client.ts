@@ -31,7 +31,7 @@ export class PassgageAPIClient {
     
     this.client = axios.create({
       baseURL: config.baseURL,
-      timeout: config.timeout || 30000,
+      timeout: config.timeout ?? 30000,
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
@@ -56,7 +56,8 @@ export class PassgageAPIClient {
         }
         
         if (this.config.debug) {
-          console.log(`[Passgage API] ${config.method?.toUpperCase()} ${config.url}`, {
+          const method = config.method ? config.method.toUpperCase() : 'UNKNOWN';
+          console.log(`[Passgage API] ${method} ${config.url}`, {
             headers: config.headers,
             params: config.params,
             data: config.data
@@ -76,10 +77,11 @@ export class PassgageAPIClient {
       },
       (error) => {
         if (this.config.debug) {
-          console.error('[Passgage API] Error:', error.response?.data || error.message);
+          const errorData = error.response && error.response.data ? error.response.data : error.message;
+          console.error('[Passgage API] Error:', errorData);
         }
         
-        if (error.response?.status === 401 && this.authContext.mode === 'user') {
+        if (error.response && error.response.status === 401 && this.authContext.mode === 'user') {
           this.authContext.userJwtToken = undefined;
           this.authContext.userInfo = undefined;
           this.authContext.tokenExpiresAt = undefined;
@@ -247,10 +249,11 @@ export class PassgageAPIClient {
   }
 
   private handleError(error: any): Error {
-    if (error.response?.data) {
+    if (error.response && error.response.data) {
       const errorData: PassgageErrorResponse = error.response.data;
-      const message = errorData.message || 'API request failed';
-      const details = errorData.errors?.map(e => `${e.field_name}: ${e.messages.join(', ')}`).join('; ') || '';
+      const message = errorData.message ?? 'API request failed';
+      const details = errorData.errors && errorData.errors.map ? 
+        errorData.errors.map(e => `${e.field_name}: ${e.messages.join(', ')}`).join('; ') : '';
       return new Error(`${message}${details ? ` - ${details}` : ''}`);
     }
     
@@ -258,7 +261,7 @@ export class PassgageAPIClient {
       return new Error('Unable to connect to Passgage API. Please check the base URL and network connection.');
     }
     
-    return new Error(error.message || 'Unknown API error occurred');
+    return new Error(error.message ?? 'Unknown API error occurred');
   }
 
   // Authentication mode management
@@ -303,9 +306,9 @@ export class PassgageAPIClient {
 
   getToken(): string | null {
     if (this.authContext.mode === 'user') {
-      return this.authContext.userJwtToken || null;
+      return this.authContext.userJwtToken ?? null;
     } else if (this.authContext.mode === 'company') {
-      return this.authContext.companyApiKey || null;
+      return this.authContext.companyApiKey ?? null;
     }
     return null;
   }

@@ -2,7 +2,7 @@ import { Tool } from '@modelcontextprotocol/sdk/types.js';
 import { PassgageAPIClient } from '../api/client.js';
 import { AuthLoginRequest } from '../types/api.js';
 
-export function createAuthTools(client: PassgageAPIClient): Tool[] {
+export function createAuthTools(_client: PassgageAPIClient): Tool[] {
   return [
     {
       name: 'passgage_login',

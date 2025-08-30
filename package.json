@@ -2,6 +2,7 @@
   "name": "passgage-mcp-server",
   "version": "1.0.0",
   "description": "Model Context Protocol (MCP) server for Passgage Public API integration",
+  "type": "module",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
@@ -38,6 +39,6 @@
     "typescript": "^5.6.3"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=22.0.0"
   }
 }

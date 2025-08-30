@@ -13,13 +13,13 @@ export interface PassgageConfig {
 }
 
 export const config: PassgageConfig = {
-  apiKey: process.env.PASSGAGE_API_KEY || '',
-  baseURL: process.env.PASSGAGE_BASE_URL || 'https://api.passgage.com',
-  timeout: parseInt(process.env.PASSGAGE_TIMEOUT || '30000'),
+  apiKey: process.env.PASSGAGE_API_KEY ?? '',
+  baseURL: process.env.PASSGAGE_BASE_URL ?? 'https://api.passgage.com',
+  timeout: parseInt(process.env.PASSGAGE_TIMEOUT ?? '30000'),
   debug: process.env.PASSGAGE_DEBUG === 'true',
   userEmail: process.env.PASSGAGE_USER_EMAIL,
   userPassword: process.env.PASSGAGE_USER_PASSWORD,
-  defaultAuthMode: (process.env.PASSGAGE_DEFAULT_AUTH_MODE as 'company' | 'user') || 'company'
+  defaultAuthMode: (process.env.PASSGAGE_DEFAULT_AUTH_MODE as 'company' | 'user') ?? 'company'
 };
 
 export function validateConfig(): void {

@@ -1,6 +1,6 @@
 import { Tool } from '@modelcontextprotocol/sdk/types.js';
 import { PassgageAPIClient } from '../api/client.js';
-import { PASSGAGE_SERVICES, PassgageService, QueryParams, TOOL_PERMISSIONS, ToolPermission } from '../types/api.js';
+import { PASSGAGE_SERVICES, PassgageService, QueryParams, TOOL_PERMISSIONS } from '../types/api.js';
 
 function checkToolPermission(toolName: string, client: PassgageAPIClient): { allowed: boolean; reason?: string } {
   const authMode = client.getAuthMode();
@@ -39,7 +39,7 @@ function checkToolPermission(toolName: string, client: PassgageAPIClient): { all
   
   if (!allowed) {
     const reason = authMode === 'user' 
-      ? `This operation requires company-level access. ${permission.description || ''}`
+      ? `This operation requires company-level access. ${permission.description ?? ''}`
       : `This operation is not available in ${authMode} mode.`;
     return { allowed: false, reason };
   }
@@ -166,7 +166,7 @@ export async function handleCRUDTool(
   // Check authentication and permissions
   const permissionCheck = checkToolPermission(name, client);
   if (!permissionCheck.allowed) {
-    throw new Error(permissionCheck.reason || 'Access denied');
+    throw new Error(permissionCheck.reason ?? 'Access denied');
   }
 
   // Parse tool name to extract operation and service
@@ -193,9 +193,9 @@ export async function handleCRUDTool(
     switch (operation) {
       case 'list': {
         const queryParams: QueryParams = {
-          page: args.page || 1,
-          per_page: Math.min(args.per_page || 25, 50),
-          q: args.filters || {}
+          page: args.page ?? 1,
+          per_page: Math.min(args.per_page ?? 25, 50),
+          q: args.filters ?? {}
         };
         
         const result = await client.get(endpoint, queryParams);
@@ -205,7 +205,7 @@ export async function handleCRUDTool(
           message: result.message,
           data: result.data,
           meta: result.meta,
-          count: result.data?.length || 0
+          count: result.data?.length ?? 0
         };
       }
 

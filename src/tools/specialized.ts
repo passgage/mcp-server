@@ -255,7 +255,7 @@ function checkSpecializedToolPermission(toolName: string, client: PassgageAPICli
   
   if (!allowed) {
     const reason = authMode === 'user' 
-      ? `This operation requires company-level access. ${permission.description || ''}`
+      ? `This operation requires company-level access. ${permission.description ?? ''}`
       : `This operation is not available in ${authMode} mode.`;
     return { allowed: false, reason };
   }
@@ -271,7 +271,7 @@ export async function handleSpecializedTool(
   // Check authentication and permissions
   const permissionCheck = checkSpecializedToolPermission(name, client);
   if (!permissionCheck.allowed) {
-    throw new Error(permissionCheck.reason || 'Access denied');
+    throw new Error(permissionCheck.reason ?? 'Access denied');
   }
 
   try {
@@ -289,8 +289,8 @@ export async function handleSpecializedTool(
           message: 'File upload initiated',
           data: uploadRequest.data,
           // Note: In a real implementation, you would upload the file to the presigned URL
-          upload_url: uploadRequest.data?.presigned_url,
-          file_id: uploadRequest.data?.id
+          upload_url: uploadRequest.data && uploadRequest.data.presigned_url ? uploadRequest.data.presigned_url : undefined,
+          file_id: uploadRequest.data && uploadRequest.data.id ? uploadRequest.data.id : undefined
         };
       }
 
@@ -349,7 +349,7 @@ export async function handleSpecializedTool(
           user_id: args.user_id,
           device_id: args.device_id,
           entrance_type: args.entrance_type,
-          timestamp: args.timestamp || new Date().toISOString()
+          timestamp: args.timestamp ?? new Date().toISOString()
         });
 
         return {
@@ -360,8 +360,8 @@ export async function handleSpecializedTool(
       }
 
       case 'passgage_search': {
-        const resources = args.resources || ['users', 'branches', 'departments', 'devices', 'leaves', 'approvals'];
-        const limit = Math.min(args.limit || 10, 25);
+        const resources = args.resources ?? ['users', 'branches', 'departments', 'devices', 'leaves', 'approvals'];
+        const limit = Math.min(args.limit ?? 10, 25);
         const searchResults: any = {};
 
         for (const resource of resources) {
@@ -374,7 +374,7 @@ export async function handleSpecializedTool(
                 description_cont: args.query
               }
             });
-            searchResults[resource] = result.data || [];
+            searchResults[resource] = result.data ?? [];
           } catch (error: any) {
             searchResults[resource] = { error: error.message };
           }
@@ -394,7 +394,7 @@ export async function handleSpecializedTool(
       }
 
       case 'passgage_export_data': {
-        const queryParams = {
+        const queryParams: any = {
           format: args.format,
           ...args.filters
         };
@@ -415,13 +415,15 @@ export async function handleSpecializedTool(
       }
 
       case 'passgage_get_dashboard_stats': {
-        const metrics = args.metrics || ['active_users', 'pending_approvals', 'total_leaves', 'entrances_today', 'late_arrivals'];
-        const dateRange = args.date_range || 'today';
+        const metrics = args.metrics ?? ['active_users', 'pending_approvals', 'total_leaves', 'entrances_today', 'late_arrivals'];
+        const dateRange = args.date_range ?? 'today';
         
-        const result = await client.get('/api/public/v1/dashboard/stats', {
+        const queryParams: any = {
           date_range: dateRange,
           metrics: metrics.join(',')
-        });
+        };
+        
+        const result = await client.get('/api/public/v1/dashboard/stats', queryParams);
 
         return {
           success: result.success,
