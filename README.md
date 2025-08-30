@@ -1,6 +1,6 @@
 # Passgage MCP Server
 
-[![npm version](https://badge.fury.io/js/@passgage%2Fmcp-server.svg)](https://badge.fury.io/js/@passgage%2Fmcp-server)
+[![npm version](https://badge.fury.io/js/passgage-mcp-server.svg)](https://badge.fury.io/js/passgage-mcp-server)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen)](https://nodejs.org/)
 
@@ -9,7 +9,7 @@ A comprehensive Model Context Protocol (MCP) server for integrating with the Pas
 ## Quick Start
 
 1. **Get Passgage API credentials** → Contact `deneyim@passgage.com`
-2. **Download and build** → `git clone` → `npm install` → `npm run build`  
+2. **No installation needed** → Uses NPX automatically  
 3. **Configure Claude Desktop** → Follow platform-specific setup below
 4. **Restart Claude Desktop** → Start using Passgage tools!
 
@@ -108,12 +108,33 @@ To resolve permission issues, switch to the appropriate authentication mode usin
 - **Node.js** 18.0.0 or higher
 - **Passgage API credentials** (contact `deneyim@passgage.com`)
 
-### Quick Install
+### Option 1: NPX (Recommended - No Installation Required)
+
+**NPX automatically downloads and runs the package when needed:**
+```bash
+npx passgage-mcp-server
+# Should start without errors, press Ctrl+C to stop
+```
+
+### Option 2: Global Installation
+
+1. **Install globally**:
+   ```bash
+   npm install -g passgage-mcp-server
+   ```
+
+2. **Verify installation**:
+   ```bash
+   passgage-mcp-server
+   # Should start without errors, press Ctrl+C to stop
+   ```
+
+### Option 3: Development Setup
 
 1. **Clone and build**:
    ```bash
-   git clone https://github.com/your-org/passgage-mcp-server.git
-   cd passgage-mcp-server
+   git clone https://github.com/passgage/mcp-server.git
+   cd mcp-server
    npm install
    npm run build
    ```
@@ -142,13 +163,13 @@ Create or edit your Claude Desktop config file:
 - **macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
 - **Linux:** `~/.config/Claude/claude_desktop_config.json`
 
-**Basic configuration:**
+**Option A: Using NPX (Recommended)**
 ```json
 {
   "mcpServers": {
     "passgage": {
-      "command": "/path/to/node",
-      "args": ["/path/to/passgage-mcp-server/dist/index.js"],
+      "command": "npx",
+      "args": ["passgage-mcp-server"],
       "env": {
         "PASSGAGE_API_KEY": "your_api_key_here",
         "PASSGAGE_BASE_URL": "https://api.passgage.com"
@@ -158,9 +179,40 @@ Create or edit your Claude Desktop config file:
 }
 ```
 
-**Replace paths with your actual paths:**
+**Option B: Using Global NPM Package**
+```json
+{
+  "mcpServers": {
+    "passgage": {
+      "command": "passgage-mcp-server",
+      "env": {
+        "PASSGAGE_API_KEY": "your_api_key_here",
+        "PASSGAGE_BASE_URL": "https://api.passgage.com"
+      }
+    }
+  }
+}
+```
+
+**Option C: Using Node.js directly (Development)**
+```json
+{
+  "mcpServers": {
+    "passgage": {
+      "command": "/path/to/node",
+      "args": ["/path/to/mcp-server/dist/index.js"],
+      "env": {
+        "PASSGAGE_API_KEY": "your_api_key_here",
+        "PASSGAGE_BASE_URL": "https://api.passgage.com"
+      }
+    }
+  }
+}
+```
+
+**Replace paths with your actual paths (Option B only):**
 - `/path/to/node` → Your Node.js path from Step 1
-- `/path/to/passgage-mcp-server` → Where you cloned this repository
+- `/path/to/mcp-server` → Where you cloned this repository
 
 ### Step 3: Restart Claude Desktop
 
@@ -338,13 +390,13 @@ Equipment checklist created:
 
 ### Configuration Templates
 
-#### Basic Configuration Template
+#### Basic Configuration Template (NPX)
 ```json
 {
   "mcpServers": {
     "passgage": {
-      "command": "/path/to/node",
-      "args": ["/path/to/passgage-mcp-server/dist/index.js"],
+      "command": "npx",
+      "args": ["passgage-mcp-server"],
       "env": {
         "PASSGAGE_API_KEY": "your_api_key",
         "PASSGAGE_BASE_URL": "https://api.passgage.com"
@@ -354,13 +406,54 @@ Equipment checklist created:
 }
 ```
 
-#### Advanced Configuration Template
+#### Advanced Configuration Template (NPX)
+```json
+{
+  "mcpServers": {
+    "passgage": {
+      "command": "npx",
+      "args": ["passgage-mcp-server"],
+      "env": {
+        "PASSGAGE_API_KEY": "your_company_api_key",
+        "PASSGAGE_USER_EMAIL": "user@company.com",
+        "PASSGAGE_USER_PASSWORD": "secure_password",
+        "PASSGAGE_BASE_URL": "https://api.passgage.com",
+        "PASSGAGE_DEFAULT_AUTH_MODE": "company",
+        "PASSGAGE_TIMEOUT": "30000",
+        "PASSGAGE_DEBUG": "false"
+      }
+    }
+  }
+}
+```
+
+#### Alternative: Global Installation Template
+```json
+{
+  "mcpServers": {
+    "passgage": {
+      "command": "passgage-mcp-server",
+      "env": {
+        "PASSGAGE_API_KEY": "your_company_api_key",
+        "PASSGAGE_USER_EMAIL": "user@company.com",
+        "PASSGAGE_USER_PASSWORD": "secure_password",
+        "PASSGAGE_BASE_URL": "https://api.passgage.com",
+        "PASSGAGE_DEFAULT_AUTH_MODE": "company",
+        "PASSGAGE_TIMEOUT": "30000",
+        "PASSGAGE_DEBUG": "false"
+      }
+    }
+  }
+}
+```
+
+#### Development Configuration Template
 ```json
 {
   "mcpServers": {
     "passgage": {
       "command": "/path/to/node",
-      "args": ["/path/to/passgage-mcp-server/dist/index.js"],
+      "args": ["/path/to/mcp-server/dist/index.js"],
       "env": {
         "PASSGAGE_API_KEY": "your_company_api_key",
         "PASSGAGE_USER_EMAIL": "user@company.com",

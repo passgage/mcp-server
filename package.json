@@ -1,6 +1,6 @@
 {
   "name": "passgage-mcp-server",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "Model Context Protocol (MCP) server for Passgage Public API integration",
   "type": "module",
   "main": "dist/index.js",
@@ -43,11 +43,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/gokhanalmas/passgage-mcp-server.git"
+    "url": "https://github.com/passgage/mcp-server.git"
   },
-  "homepage": "https://github.com/gokhanalmas/passgage-mcp-server#readme",
+  "homepage": "https://github.com/passgage/mcp-server#readme",
   "bugs": {
-    "url": "https://github.com/gokhanalmas/passgage-mcp-server/issues"
+    "url": "https://github.com/passgage/mcp-server/issues"
   },
   "files": [
     "dist/",

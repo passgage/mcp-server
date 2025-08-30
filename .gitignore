@@ -32,6 +32,9 @@ Thumbs.db
 *.swo
 *~
 
+# Claude Code settings (personal)
+.claude/settings.local.json
+
 # Logs
 logs/
 *.log
