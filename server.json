@@ -1,0 +1,72 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-07-09/server.schema.json",
+  "name": "io.github.passgage/mcp-server",
+  "description": "Workforce management with 130+ tools for HR, time tracking, approvals, employee management",
+  "status": "active",
+  "repository": {
+    "url": "https://github.com/passgage/mcp-server",
+    "source": "github"
+  },
+  "version_detail": {
+    "version": "1.0.3"
+  },
+  "packages": [
+    {
+      "registry_type": "npm",
+      "registry_base_url": "https://registry.npmjs.org",
+      "identifier": "passgage-mcp-server",
+      "version": "1.0.3",
+      "environment_variables": [
+        {
+          "name": "PASSGAGE_API_KEY",
+          "description": "Your Passgage API key for company-level authentication",
+          "is_required": true,
+          "format": "string",
+          "is_secret": true
+        },
+        {
+          "name": "PASSGAGE_USER_EMAIL",
+          "description": "Your Passgage user email for user-level authentication (optional)",
+          "is_required": false,
+          "format": "string",
+          "is_secret": false
+        },
+        {
+          "name": "PASSGAGE_USER_PASSWORD",
+          "description": "Your Passgage user password for user-level authentication (optional)",
+          "is_required": false,
+          "format": "string",
+          "is_secret": true
+        },
+        {
+          "name": "PASSGAGE_BASE_URL",
+          "description": "Passgage API base URL (default: https://api.passgage.com)",
+          "is_required": false,
+          "format": "string",
+          "is_secret": false
+        },
+        {
+          "name": "PASSGAGE_DEFAULT_AUTH_MODE",
+          "description": "Default authentication mode: 'company' or 'user' (default: company)",
+          "is_required": false,
+          "format": "string",
+          "is_secret": false
+        },
+        {
+          "name": "PASSGAGE_TIMEOUT",
+          "description": "Request timeout in milliseconds (default: 30000)",
+          "is_required": false,
+          "format": "string",
+          "is_secret": false
+        },
+        {
+          "name": "PASSGAGE_DEBUG",
+          "description": "Enable debug logging: 'true' or 'false' (default: false)",
+          "is_required": false,
+          "format": "string",
+          "is_secret": false
+        }
+      ]
+    }
+  ]
+}

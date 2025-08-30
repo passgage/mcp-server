@@ -35,6 +35,12 @@ Thumbs.db
 # Claude Code settings (personal)
 .claude/settings.local.json
 
+# MCP Registry temporary files
+/tmp/mcp-registry/
+mcp-publisher
+publisher
+.mcpregistry_*
+
 # Logs
 logs/
 *.log
