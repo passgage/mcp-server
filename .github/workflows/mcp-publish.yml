@@ -1,0 +1,44 @@
+name: Publish to MCP Registry
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish'
+        required: true
+        default: 'latest'
+
+jobs:
+  publish-mcp:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          
+      - name: Download MCP Publisher
+        run: |
+          curl -L -o mcp-publisher https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher-linux-amd64
+          chmod +x mcp-publisher
+          
+      - name: Update server.json version
+        if: github.event_name == 'release'
+        run: |
+          # Update version in server.json to match release tag
+          sed -i 's/"version": "[^"]*"/"version": "${{ github.event.release.tag_name }}"/g' server.json
+          
+      - name: Authenticate with MCP Registry
+        run: ./mcp-publisher login github-oidc
+        
+      - name: Publish to MCP Registry
+        run: ./mcp-publisher publish server.json
