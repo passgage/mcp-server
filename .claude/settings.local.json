@@ -23,7 +23,9 @@
       "Read(/Users/gokhanalmas/Library/Logs/Claude/**)",
       "Bash(npm ls:*)",
       "Bash(npm view:*)",
-      "Bash(npm install)"
+      "Bash(npm install)",
+      "Bash(npm pack:*)",
+      "Bash(npm publish:*)"
     ],
     "deny": [],
     "ask": []

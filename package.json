@@ -40,5 +40,21 @@
   },
   "engines": {
     "node": ">=22.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gokhanalmas/passgage-mcp-server.git"
+  },
+  "homepage": "https://github.com/gokhanalmas/passgage-mcp-server#readme",
+  "bugs": {
+    "url": "https://github.com/gokhanalmas/passgage-mcp-server/issues"
+  },
+  "files": [
+    "dist/",
+    "README.md",
+    "LICENSE"
+  ],
+  "bin": {
+    "passgage-mcp-server": "./dist/index.js"
   }
 }
