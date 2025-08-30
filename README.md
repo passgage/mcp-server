@@ -48,12 +48,43 @@ Complete create, read, update, delete operations for all Passgage services:
 - **Dashboard Statistics** - Key metrics and analytics
 
 ### Advanced Features
+- **Dual authentication modes** - Switch between company and user access
+- **Permission-based access control** - Tools restricted based on authentication mode
 - **Ransack-style filtering** - Advanced query capabilities
 - **Pagination support** - Handle large datasets efficiently
 - **Error handling** - Comprehensive error management
 - **Type safety** - Full TypeScript implementation
 - **Auto-retry logic** - Automatic token refresh
 - **Debug mode** - Detailed logging for development
+
+## Permission System
+
+The MCP server implements a comprehensive permission system based on authentication modes:
+
+### Company Mode Permissions
+- ✅ **Full admin access** - All CRUD operations on all resources
+- ✅ **User management** - Create, update, delete users
+- ✅ **System administration** - Manage departments, branches, devices
+- ✅ **Payroll access** - View payroll data
+- ✅ **Bulk operations** - Mass approval, data export
+- ✅ **All specialized tools** - File upload, dashboard stats, search
+
+### User Mode Permissions  
+- ✅ **Read access** - View users, departments, branches, devices
+- ✅ **Personal operations** - Create/update own leave requests
+- ✅ **Limited approvals** - Create approval requests (not approve them)
+- ✅ **Basic tools** - File upload, search, entrance tracking
+- ❌ **Admin operations** - Cannot create/delete users or manage system
+- ❌ **Payroll data** - Cannot access salary information
+- ❌ **Bulk operations** - Cannot perform mass operations
+
+### Permission Errors
+When a tool is not available in the current mode, you'll receive clear error messages:
+```
+"This operation requires company-level access. Creating users requires admin privileges"
+```
+
+To resolve permission issues, switch to the appropriate authentication mode using the mode management tools.
 
 ## Installation
 
@@ -102,23 +133,43 @@ PASSGAGE_DEBUG=false                         # Enable debug logging (default: fa
 
 ### Authentication Methods
 
-#### 1. Company API Key (Recommended for integrations)
+The MCP server supports **dual authentication modes** that can be switched dynamically:
+
+#### 1. Company Mode (System Integration)
 ```env
 PASSGAGE_API_KEY=your_company_api_key
+PASSGAGE_DEFAULT_AUTH_MODE=company
 ```
-- Long-lived authentication
-- Company-level access
-- Best for system integrations
+**Features:**
+- **Full admin access** to all company data and users
+- **Long-lived authentication** - no token refresh needed
+- **All operations allowed** - create, update, delete users, manage departments, etc.
+- **Best for:** System integrations, admin operations, bulk data management
 
-#### 2. User Credentials (Interactive use)
+#### 2. User Mode (Personal Access)
 ```env
 PASSGAGE_USER_EMAIL=user@company.com
 PASSGAGE_USER_PASSWORD=secure_password
+PASSGAGE_DEFAULT_AUTH_MODE=user
 ```
-- JWT token-based authentication
-- User-level access
-- Automatic login on server start
-- Token auto-refresh
+**Features:**
+- **Limited personal access** - user's own data and permissions
+- **JWT token-based** with automatic refresh
+- **Restricted operations** - cannot manage other users, departments, payroll data
+- **Best for:** Personal use, individual employee operations
+
+#### 3. Dual Mode Setup (Recommended)
+```env
+# Configure both authentication methods
+PASSGAGE_API_KEY=your_company_api_key
+PASSGAGE_USER_EMAIL=user@company.com  
+PASSGAGE_USER_PASSWORD=secure_password
+PASSGAGE_DEFAULT_AUTH_MODE=company
+```
+**Features:**
+- **Switch between modes** using authentication tools
+- **Best of both worlds** - admin access when needed, personal access when appropriate
+- **Flexible permissions** based on current context
 
 ## Usage
 
@@ -155,10 +206,14 @@ Add to your Claude Desktop MCP configuration:
 ### Tool Categories
 
 #### Authentication Tools
-- `passgage_login` - Login with email/password
-- `passgage_refresh_token` - Refresh JWT token
-- `passgage_logout` - Logout and clear session
-- `passgage_auth_status` - Check authentication status
+- `passgage_login` - Login with email/password (switches to user mode)
+- `passgage_refresh_token` - Refresh current JWT token
+- `passgage_logout` - Logout and clear user session
+- `passgage_auth_status` - Check authentication status and available modes
+- `passgage_set_company_mode` - Switch to company API key mode
+- `passgage_switch_to_user_mode` - Switch to user JWT mode (requires previous login)
+- `passgage_switch_to_company_mode` - Switch to company mode (requires API key)
+- `passgage_get_auth_modes` - Get detailed information about available modes
 
 #### CRUD Tools (5 tools per service × 25 services = 125 tools)
 For each service (users, branches, departments, etc.):
@@ -180,9 +235,9 @@ For each service (users, branches, departments, etc.):
 
 ## Examples
 
-### Authentication
+### Authentication & Mode Management
 ```javascript
-// Login with user credentials
+// Login with user credentials (switches to user mode)
 {
   "name": "passgage_login",
   "arguments": {
@@ -191,9 +246,29 @@ For each service (users, branches, departments, etc.):
   }
 }
 
-// Check authentication status
+// Switch to company mode for admin operations
+{
+  "name": "passgage_set_company_mode",
+  "arguments": {
+    "api_key": "your_company_api_key"
+  }
+}
+
+// Switch back to user mode (if previously logged in)
+{
+  "name": "passgage_switch_to_user_mode",
+  "arguments": {}
+}
+
+// Check current authentication status and available modes
 {
   "name": "passgage_auth_status",
+  "arguments": {}
+}
+
+// Get detailed information about authentication modes
+{
+  "name": "passgage_get_auth_modes",
   "arguments": {}
 }
 ```

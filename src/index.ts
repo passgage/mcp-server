@@ -66,7 +66,9 @@ class PassgageMCPServer {
 
         // Route to appropriate handler based on tool name
         if (name.startsWith('passgage_login') || name.startsWith('passgage_refresh') || 
-            name.startsWith('passgage_logout') || name.startsWith('passgage_auth_status')) {
+            name.startsWith('passgage_logout') || name.startsWith('passgage_auth_status') ||
+            name.startsWith('passgage_set_company_mode') || name.startsWith('passgage_switch_to') ||
+            name.startsWith('passgage_get_auth_modes')) {
           result = await handleAuthTool(name, args || {}, this.client);
         } else if (name.startsWith('passgage_list_') || name.startsWith('passgage_get_') ||
                    name.startsWith('passgage_create_') || name.startsWith('passgage_update_') ||
@@ -104,8 +106,8 @@ class PassgageMCPServer {
   }
 
   public async run(): Promise<void> {
-    // Auto-login if user credentials are provided
-    if (config.userEmail && config.userPassword && !config.apiKey) {
+    // Auto-login based on default auth mode and available credentials
+    if (config.defaultAuthMode === 'user' && config.userEmail && config.userPassword) {
       try {
         console.error('Attempting auto-login with provided credentials...');
         await this.client.login({
@@ -115,8 +117,19 @@ class PassgageMCPServer {
         console.error('Auto-login successful');
       } catch (error: any) {
         console.error('Auto-login failed:', error.message);
-        console.error('Continuing without authentication. Use passgage_login tool to authenticate manually.');
+        console.error('Continuing with available authentication. Use authentication tools to switch modes.');
       }
+    }
+
+    // Report authentication status
+    const authContext = this.client.getAuthContext();
+    console.error(`Passgage MCP Server starting in ${authContext.mode} mode`);
+    if (authContext.mode === 'company') {
+      console.error('Company mode: Full admin access to all company data');
+    } else if (authContext.mode === 'user') {
+      console.error(`User mode: Personal access for ${authContext.userInfo?.email}`);
+    } else {
+      console.error('No authentication mode active. Use authentication tools to login.');
     }
 
     const transport = new StdioServerTransport();

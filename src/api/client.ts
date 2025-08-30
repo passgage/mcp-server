@@ -6,17 +6,28 @@ import {
   AuthLoginRequest,
   AuthLoginResponse,
   QueryParams,
-  ApiRequestConfig
+  ApiRequestConfig,
+  AuthMode,
+  AuthContext
 } from '../types/api.js';
 
 export class PassgageAPIClient {
   private client: AxiosInstance;
-  private jwtToken: string | null = null;
+  private authContext: AuthContext;
   private refreshTimer: NodeJS.Timeout | null = null;
   private config: ApiClientConfig;
 
   constructor(config: ApiClientConfig) {
     this.config = config;
+    
+    // Initialize authentication context
+    this.authContext = {
+      mode: config.apiKey ? 'company' : 'none',
+      companyApiKey: config.apiKey,
+      userJwtToken: undefined,
+      userInfo: undefined,
+      tokenExpiresAt: undefined
+    };
     
     this.client = axios.create({
       baseURL: config.baseURL,
@@ -37,8 +48,11 @@ export class PassgageAPIClient {
   private setupInterceptors(): void {
     this.client.interceptors.request.use(
       (config) => {
-        if (this.jwtToken && !config.headers['Authorization']?.toString().includes('Bearer')) {
-          config.headers['Authorization'] = `Bearer ${this.jwtToken}`;
+        // Set authorization header based on current auth mode
+        if (this.authContext.mode === 'user' && this.authContext.userJwtToken) {
+          config.headers['Authorization'] = `Bearer ${this.authContext.userJwtToken}`;
+        } else if (this.authContext.mode === 'company' && this.authContext.companyApiKey) {
+          config.headers['Authorization'] = `Bearer ${this.authContext.companyApiKey}`;
         }
         
         if (this.config.debug) {
@@ -65,8 +79,10 @@ export class PassgageAPIClient {
           console.error('[Passgage API] Error:', error.response?.data || error.message);
         }
         
-        if (error.response?.status === 401 && this.jwtToken) {
-          this.jwtToken = null;
+        if (error.response?.status === 401 && this.authContext.mode === 'user') {
+          this.authContext.userJwtToken = undefined;
+          this.authContext.userInfo = undefined;
+          this.authContext.tokenExpiresAt = undefined;
           if (this.refreshTimer) {
             clearTimeout(this.refreshTimer);
             this.refreshTimer = null;
@@ -87,7 +103,10 @@ export class PassgageAPIClient {
       );
 
       if (response.data.success && response.data.data.token) {
-        this.jwtToken = response.data.data.token;
+        this.authContext.mode = 'user';
+        this.authContext.userJwtToken = response.data.data.token;
+        this.authContext.userInfo = response.data.data.user;
+        this.authContext.tokenExpiresAt = response.data.data.expires_at;
         this.scheduleTokenRefresh(response.data.data.expires_at);
       }
 
@@ -102,7 +121,8 @@ export class PassgageAPIClient {
       const response = await this.client.post('/api/public/auth/refresh');
       
       if (response.data.success && response.data.data.token) {
-        this.jwtToken = response.data.data.token;
+        this.authContext.userJwtToken = response.data.data.token;
+        this.authContext.tokenExpiresAt = response.data.data.expires_at;
         this.scheduleTokenRefresh(response.data.data.expires_at);
       }
       
@@ -116,7 +136,9 @@ export class PassgageAPIClient {
     try {
       const response = await this.client.delete('/api/public/auth/logout');
       
-      this.jwtToken = null;
+      this.authContext.userJwtToken = undefined;
+      this.authContext.userInfo = undefined;
+      this.authContext.tokenExpiresAt = undefined;
       if (this.refreshTimer) {
         clearTimeout(this.refreshTimer);
         this.refreshTimer = null;
@@ -239,17 +261,57 @@ export class PassgageAPIClient {
     return new Error(error.message || 'Unknown API error occurred');
   }
 
+  // Authentication mode management
+  getAuthMode(): AuthMode {
+    return this.authContext.mode;
+  }
+
+  getAuthContext(): AuthContext {
+    return { ...this.authContext };
+  }
+
+  setCompanyMode(apiKey: string): void {
+    this.authContext.mode = 'company';
+    this.authContext.companyApiKey = apiKey;
+    this.config.apiKey = apiKey;
+    this.client.defaults.headers.common['Authorization'] = `Bearer ${apiKey}`;
+  }
+
+  switchToUserMode(): boolean {
+    if (this.authContext.userJwtToken) {
+      this.authContext.mode = 'user';
+      return true;
+    }
+    return false;
+  }
+
+  switchToCompanyMode(): boolean {
+    if (this.authContext.companyApiKey) {
+      this.authContext.mode = 'company';
+      return true;
+    }
+    return false;
+  }
+
+  // Legacy compatibility methods
   isAuthenticated(): boolean {
-    return !!this.jwtToken || !!this.config.apiKey;
+    return this.authContext.mode !== 'none' && (
+      (this.authContext.mode === 'company' && !!this.authContext.companyApiKey) ||
+      (this.authContext.mode === 'user' && !!this.authContext.userJwtToken)
+    );
   }
 
   getToken(): string | null {
-    return this.jwtToken;
+    if (this.authContext.mode === 'user') {
+      return this.authContext.userJwtToken || null;
+    } else if (this.authContext.mode === 'company') {
+      return this.authContext.companyApiKey || null;
+    }
+    return null;
   }
 
   setApiKey(apiKey: string): void {
-    this.config.apiKey = apiKey;
-    this.client.defaults.headers.common['Authorization'] = `Bearer ${apiKey}`;
+    this.setCompanyMode(apiKey);
   }
 
   disconnect(): void {
@@ -257,6 +319,12 @@ export class PassgageAPIClient {
       clearTimeout(this.refreshTimer);
       this.refreshTimer = null;
     }
-    this.jwtToken = null;
+    this.authContext = {
+      mode: 'none',
+      companyApiKey: undefined,
+      userJwtToken: undefined,
+      userInfo: undefined,
+      tokenExpiresAt: undefined
+    };
   }
 }

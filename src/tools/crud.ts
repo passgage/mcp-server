@@ -1,6 +1,51 @@
 import { Tool } from '@modelcontextprotocol/sdk/types.js';
 import { PassgageAPIClient } from '../api/client.js';
-import { PASSGAGE_SERVICES, PassgageService, QueryParams } from '../types/api.js';
+import { PASSGAGE_SERVICES, PassgageService, QueryParams, TOOL_PERMISSIONS, ToolPermission } from '../types/api.js';
+
+function checkToolPermission(toolName: string, client: PassgageAPIClient): { allowed: boolean; reason?: string } {
+  const authMode = client.getAuthMode();
+  
+  if (authMode === 'none') {
+    return { allowed: false, reason: 'Not authenticated. Please login or set API key first.' };
+  }
+
+  // Extract operation and service from tool name (e.g., "passgage_create_user" -> "users_create")
+  const parts = toolName.replace('passgage_', '').split('_');
+  const operation = parts[0]; // create, update, delete, list, get
+  let service = parts.slice(1).join('_');
+  
+  // Convert singular to plural for permission lookup
+  if (operation !== 'list') {
+    service = service + 's';
+  }
+  
+  const permissionKey = `${service}_${operation}`;
+  const permission = TOOL_PERMISSIONS[permissionKey];
+  
+  // If no specific permission defined, default to both modes allowed for read operations
+  if (!permission) {
+    if (operation === 'list' || operation === 'get') {
+      return { allowed: true };
+    }
+    // Write operations default to company mode only
+    return { 
+      allowed: authMode === 'company',
+      reason: authMode === 'user' ? 'This operation requires company-level access. Please switch to company mode.' : undefined
+    };
+  }
+
+  const allowed = (authMode === 'company' && permission.companyMode) || 
+                  (authMode === 'user' && permission.userMode);
+  
+  if (!allowed) {
+    const reason = authMode === 'user' 
+      ? `This operation requires company-level access. ${permission.description || ''}`
+      : `This operation is not available in ${authMode} mode.`;
+    return { allowed: false, reason };
+  }
+
+  return { allowed: true };
+}
 
 export function createCRUDTools(): Tool[] {
   const tools: Tool[] = [];
@@ -118,8 +163,10 @@ export async function handleCRUDTool(
   args: any,
   client: PassgageAPIClient
 ): Promise<any> {
-  if (!client.isAuthenticated()) {
-    throw new Error('Not authenticated. Please login first or provide an API key.');
+  // Check authentication and permissions
+  const permissionCheck = checkToolPermission(name, client);
+  if (!permissionCheck.allowed) {
+    throw new Error(permissionCheck.reason || 'Access denied');
   }
 
   // Parse tool name to extract operation and service

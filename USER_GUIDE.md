@@ -22,42 +22,76 @@ Claude Desktop ayarlarınıza şu konfigürasyonu ekleyin:
 }
 ```
 
-### 2. İlk Giriş
+### 2. Authentication Modes
 
-Claude'a şu şekilde söyleyebilirsiniz:
+Passgage MCP Server iki farklı authentication modunu destekler:
 
-> "Passgage sistemine giriş yapmam gerekiyor. Email: kullanici@sirket.com, şifrem: mypassword"
+#### 🏢 Company Mode (Şirket Modu)
+- **Tam admin erişimi** - Tüm kullanıcılar ve veriler
+- **Sistem yönetimi** - Departman, şube, cihaz yönetimi
+- **Toplu işlemler** - Bulk approval, data export
+- **En iyi seçenek:** Admin işlemleri, sistem entegrasyonları
 
-Claude otomatik olarak `passgage_login` aracını kullanacak.
+#### 👤 User Mode (Kullanıcı Modu)  
+- **Kişisel erişim** - Sadece kendi verilerine erişim
+- **Sınırlı işlemler** - Kendi izin talepleri, profil görüntüleme
+- **Güvenli** - Diğer kullanıcıların verilerine erişim yok
+- **En iyi seçenek:** Bireysel kullanım, kişisel işlemler
+
+### 3. İlk Giriş ve Mod Yönetimi
+
+#### Company Mode ile başlangıç:
+> "Passgage company mode'da çalışmaya başla"
+
+#### User login ile başlangıç:
+> "Passgage sistemine giriş yap. Email: kullanici@sirket.com, şifrem: mypassword"
+
+#### Mod değiştirme:
+> "Company mode'a geç" veya "User mode'a geç"
+
+#### Mevcut durumu kontrol etme:
+> "Passgage authentication durumumu göster"
+
+## İzin Sembolleri
+
+Bu kılavuzda kullanılan semboller:
+- ✅ **Her iki modda** - Hem Company hem User mode'da kullanılabilir
+- ⚠️ **Sadece Company Mode** - Admin yetkileri gerektirir
+- 👤 **Sadece User Mode** - Kişisel işlemler için
 
 ## Temel Kullanım Örnekleri
 
 ### 👥 Kullanıcı Yönetimi
 
-#### Aktif kullanıcıları listele
+#### Aktif kullanıcıları listele (Her iki modda)
 > "Şirketteki tüm aktif çalışanları göster"
 
-#### Belirli departmandaki kullanıcıları bul
+#### Belirli departmandaki kullanıcıları bul (Her iki modda)
 > "İnsan Kaynakları departmanında çalışan kişileri listele"
 
-#### Yeni kullanıcı ekle
+#### Yeni kullanıcı ekle ⚠️ (Sadece Company Mode)
 > "Yeni bir çalışan kaydet: Ahmet Yılmaz, email: ahmet@sirket.com, departman: IT"
+> 
+> *Not: Bu işlem admin yetkileri gerektirir. User mode'dayken "Company mode'a geç" demeniz gerekebilir.*
 
-#### Kullanıcı bilgilerini güncelle
+#### Kullanıcı bilgilerini güncelle ⚠️ (Sadece Company Mode)  
 > "Ali Demir'in telefon numarasını 0532 123 4567 olarak güncelle"
 
 ### 📝 İzin Yönetimi
 
-#### Bekleyen izin taleplerini göster
+#### Bekleyen izin taleplerini göster (Her iki modda)
 > "Onay bekleyen izin taleplerini listele"
 
-#### İzin taleplerini filtrele
+#### İzin taleplerini filtrele (Her iki modda)
 > "Bu ay içindeki yıllık izin taleplerini göster"
 
-#### İzin talebi onayla
+#### Kendi izin talebini oluştur (Her iki modda)
+> "5 Haziran'dan 10 Haziran'a kadar yıllık izin talebi oluştur"
+
+#### İzin talebi onayla ⚠️ (Sadece Company Mode)
 > "ID'si abc123 olan izin talebini onayla, not: Departman müdürü onayı"
 
-#### Toplu izin onayı
+#### Toplu izin onayı ⚠️ (Sadece Company Mode)  
 > "Bekleyen tüm yıllık izin taleplerini onayla"
 
 ### 🏢 Şube ve Departman İşlemleri

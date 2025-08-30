@@ -177,6 +177,24 @@ export interface ApiClientConfig {
   debug?: boolean;
 }
 
+export type AuthMode = 'company' | 'user' | 'none';
+
+export interface AuthContext {
+  mode: AuthMode;
+  companyApiKey?: string;
+  userJwtToken?: string;
+  userInfo?: {
+    id: string;
+    email: string;
+    full_name: string;
+    company: {
+      id: string;
+      name: string;
+    };
+  };
+  tokenExpiresAt?: string;
+}
+
 export type ApiMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
 export interface ApiRequestConfig {
@@ -218,3 +236,52 @@ export const PASSGAGE_SERVICES = [
 ] as const;
 
 export type PassgageService = typeof PASSGAGE_SERVICES[number];
+
+export interface ToolPermission {
+  companyMode: boolean;
+  userMode: boolean;
+  description?: string;
+}
+
+export const TOOL_PERMISSIONS: Record<string, ToolPermission> = {
+  // Admin-only operations (Company mode only)
+  'users_create': { companyMode: true, userMode: false, description: 'Creating users requires admin privileges' },
+  'users_update': { companyMode: true, userMode: false, description: 'Updating users requires admin privileges' },
+  'users_delete': { companyMode: true, userMode: false, description: 'Deleting users requires admin privileges' },
+  'departments_create': { companyMode: true, userMode: false, description: 'Managing departments requires admin privileges' },
+  'departments_update': { companyMode: true, userMode: false, description: 'Managing departments requires admin privileges' },
+  'departments_delete': { companyMode: true, userMode: false, description: 'Managing departments requires admin privileges' },
+  'branches_create': { companyMode: true, userMode: false, description: 'Managing branches requires admin privileges' },
+  'branches_update': { companyMode: true, userMode: false, description: 'Managing branches requires admin privileges' },
+  'branches_delete': { companyMode: true, userMode: false, description: 'Managing branches requires admin privileges' },
+  'devices_create': { companyMode: true, userMode: false, description: 'Managing devices requires admin privileges' },
+  'devices_update': { companyMode: true, userMode: false, description: 'Managing devices requires admin privileges' },
+  'devices_delete': { companyMode: true, userMode: false, description: 'Managing devices requires admin privileges' },
+  'shifts_create': { companyMode: true, userMode: false, description: 'Managing shifts requires admin privileges' },
+  'shifts_update': { companyMode: true, userMode: false, description: 'Managing shifts requires admin privileges' },
+  'shifts_delete': { companyMode: true, userMode: false, description: 'Managing shifts requires admin privileges' },
+  'payrolls_list': { companyMode: true, userMode: false, description: 'Accessing payroll data requires admin privileges' },
+  'payrolls_get': { companyMode: true, userMode: false, description: 'Accessing payroll data requires admin privileges' },
+  
+  // Approval operations (Company mode preferred, User mode for own requests)
+  'approvals_create': { companyMode: true, userMode: true, description: 'Can create approval requests' },
+  'approvals_update': { companyMode: true, userMode: false, description: 'Updating approvals requires admin privileges' },
+  'approvals_delete': { companyMode: true, userMode: false, description: 'Deleting approvals requires admin privileges' },
+  'bulk_approve': { companyMode: true, userMode: false, description: 'Bulk operations require admin privileges' },
+  
+  // Read operations (Both modes allowed)
+  'users_list': { companyMode: true, userMode: true, description: 'Can view user list' },
+  'users_get': { companyMode: true, userMode: true, description: 'Can view user details' },
+  'departments_list': { companyMode: true, userMode: true, description: 'Can view departments' },
+  'branches_list': { companyMode: true, userMode: true, description: 'Can view branches' },
+  'devices_list': { companyMode: true, userMode: true, description: 'Can view devices' },
+  'shifts_list': { companyMode: true, userMode: true, description: 'Can view shifts' },
+  'leaves_list': { companyMode: true, userMode: true, description: 'Can view leaves' },
+  'approvals_list': { companyMode: true, userMode: true, description: 'Can view approvals' },
+  
+  // Personal operations (Both modes, but user mode limited to own data)
+  'leaves_create': { companyMode: true, userMode: true, description: 'Can create leave requests' },
+  'leaves_update': { companyMode: true, userMode: true, description: 'Can update own leave requests' },
+  'entrances_list': { companyMode: true, userMode: true, description: 'Can view entrance records' },
+  'user_shifts_list': { companyMode: true, userMode: true, description: 'Can view shift assignments' }
+};

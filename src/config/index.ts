@@ -9,6 +9,7 @@ export interface PassgageConfig {
   debug: boolean;
   userEmail?: string;
   userPassword?: string;
+  defaultAuthMode: 'company' | 'user';
 }
 
 export const config: PassgageConfig = {
@@ -17,7 +18,8 @@ export const config: PassgageConfig = {
   timeout: parseInt(process.env.PASSGAGE_TIMEOUT || '30000'),
   debug: process.env.PASSGAGE_DEBUG === 'true',
   userEmail: process.env.PASSGAGE_USER_EMAIL,
-  userPassword: process.env.PASSGAGE_USER_PASSWORD
+  userPassword: process.env.PASSGAGE_USER_PASSWORD,
+  defaultAuthMode: (process.env.PASSGAGE_DEFAULT_AUTH_MODE as 'company' | 'user') || 'company'
 };
 
 export function validateConfig(): void {
@@ -31,5 +33,18 @@ export function validateConfig(): void {
   
   if (!config.baseURL) {
     throw new Error('PASSGAGE_BASE_URL must be provided');
+  }
+
+  if (config.defaultAuthMode && !['company', 'user'].includes(config.defaultAuthMode)) {
+    throw new Error('PASSGAGE_DEFAULT_AUTH_MODE must be either "company" or "user"');
+  }
+
+  // Warn if default mode doesn't match available credentials
+  if (config.defaultAuthMode === 'company' && !config.apiKey) {
+    console.warn('Warning: Default auth mode is "company" but no API key provided');
+  }
+  
+  if (config.defaultAuthMode === 'user' && !config.userEmail) {
+    console.warn('Warning: Default auth mode is "user" but no user credentials provided');
   }
 }

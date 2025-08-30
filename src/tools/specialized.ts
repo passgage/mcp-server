@@ -225,13 +225,53 @@ export function createSpecializedTools(): Tool[] {
   ];
 }
 
+function checkSpecializedToolPermission(toolName: string, client: PassgageAPIClient): { allowed: boolean; reason?: string } {
+  const authMode = client.getAuthMode();
+  
+  if (authMode === 'none') {
+    return { allowed: false, reason: 'Not authenticated. Please login or set API key first.' };
+  }
+
+  // Define permission rules for specialized tools
+  const specializedPermissions: Record<string, { companyMode: boolean; userMode: boolean; description?: string }> = {
+    'passgage_upload_file': { companyMode: true, userMode: true, description: 'File upload available in both modes' },
+    'passgage_approve_request': { companyMode: true, userMode: false, description: 'Approving requests requires admin privileges' },
+    'passgage_bulk_approve': { companyMode: true, userMode: false, description: 'Bulk operations require admin privileges' },
+    'passgage_assign_user_to_shift': { companyMode: true, userMode: false, description: 'Assigning users requires admin privileges' },
+    'passgage_track_entrance': { companyMode: true, userMode: true, description: 'Entrance tracking available in both modes' },
+    'passgage_search': { companyMode: true, userMode: true, description: 'Search available in both modes' },
+    'passgage_export_data': { companyMode: true, userMode: false, description: 'Data export requires admin privileges' },
+    'passgage_get_dashboard_stats': { companyMode: true, userMode: true, description: 'Dashboard stats available in both modes' }
+  };
+
+  const permission = specializedPermissions[toolName];
+  if (!permission) {
+    // Default: allow both modes for unknown tools
+    return { allowed: true };
+  }
+
+  const allowed = (authMode === 'company' && permission.companyMode) || 
+                  (authMode === 'user' && permission.userMode);
+  
+  if (!allowed) {
+    const reason = authMode === 'user' 
+      ? `This operation requires company-level access. ${permission.description || ''}`
+      : `This operation is not available in ${authMode} mode.`;
+    return { allowed: false, reason };
+  }
+
+  return { allowed: true };
+}
+
 export async function handleSpecializedTool(
   name: string,
   args: any,
   client: PassgageAPIClient
 ): Promise<any> {
-  if (!client.isAuthenticated()) {
-    throw new Error('Not authenticated. Please login first or provide an API key.');
+  // Check authentication and permissions
+  const permissionCheck = checkSpecializedToolPermission(name, client);
+  if (!permissionCheck.allowed) {
+    throw new Error(permissionCheck.reason || 'Access denied');
   }
 
   try {
