@@ -1,8 +1,10 @@
-# Passgage MCP Server
+# <img src="logo.svg" width="24" height="24" alt="Passgage Logo" style="vertical-align: middle;"> Passgage MCP Server
 
 [![npm version](https://badge.fury.io/js/passgage-mcp-server.svg)](https://badge.fury.io/js/passgage-mcp-server)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen)](https://nodejs.org/)
+[![MCP Compatible](https://img.shields.io/badge/MCP-Compatible-blue.svg)](https://modelcontextprotocol.io/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-Ready-3178c6.svg)](https://www.typescriptlang.org/)
 
 A comprehensive Model Context Protocol (MCP) server for integrating with the Passgage Public API. This server provides 130+ tools to interact with all aspects of the Passgage workforce management system through Claude and other MCP-compatible AI assistants.
 
