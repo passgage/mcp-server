@@ -1,3 +1,9 @@
+## [1.1.2](https://github.com/passgage/mcp-server/compare/v1.1.1...v1.1.2) (2025-08-31)
+
+### Bug Fixes
+
+* Make MCP Registry publishing non-blocking for CI/CD workflow ([9ea1ec8](https://github.com/passgage/mcp-server/commit/9ea1ec88c037656107d76fc903a53c27cb9ffbfd))
+
 ## [1.1.1](https://github.com/passgage/mcp-server/compare/v1.1.0...v1.1.1) (2025-08-31)
 
 ### Bug Fixes
