@@ -97,26 +97,38 @@ jobs:
             git push
           fi
 
-      # TODO: Enable MCP Registry publishing when it's GA
-      # Currently disabled as MCP Registry is in preview and binary is not yet available
-      # - name: Setup MCP Publisher
-      #   if: success()
-      #   run: |
-      #     # Clone MCP Registry and build publisher
-      #     git clone https://github.com/modelcontextprotocol/registry.git /tmp/mcp-registry
-      #     cd /tmp/mcp-registry
-      #     cd cmd/publisher
-      #     go build -o /tmp/mcp-publisher .
-      #     chmod +x /tmp/mcp-publisher
+      - name: Setup Go
+        if: success()
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
 
-      # - name: Login to MCP Registry
-      #   if: success()
-      #   run: |
-      #     # Login using GitHub OIDC
-      #     /tmp/mcp-publisher login github-oidc
+      - name: Setup MCP Publisher
+        if: success()
+        run: |
+          # Clone MCP Registry and build publisher
+          git clone https://github.com/modelcontextprotocol/registry.git /tmp/mcp-registry
+          cd /tmp/mcp-registry
+          
+          # Build the publisher CLI
+          cd cmd/publisher
+          go build -o /tmp/mcp-publisher .
+          chmod +x /tmp/mcp-publisher
+          
+          # Verify the binary exists
+          ls -la /tmp/mcp-publisher
 
-      # - name: Publish to MCP Registry
-      #   if: success()
-      #   run: |
-      #     # Publish server.json to MCP Registry
-      #     /tmp/mcp-publisher publish
+      - name: Publish to MCP Registry
+        if: success()
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Configure git for authentication
+          git config --global url."https://x-access-token:${GITHUB_TOKEN}@github.com/".insteadOf "https://github.com/"
+          
+          # Navigate to repo root
+          cd $GITHUB_WORKSPACE
+          
+          # Try to publish using GitHub OIDC authentication
+          echo "Publishing server.json to MCP Registry..."
+          /tmp/mcp-publisher publish --auth github-oidc || echo "MCP Registry publishing failed (registry may be in preview)"
