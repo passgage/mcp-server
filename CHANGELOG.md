@@ -8,11 +8,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Community documentation files (CODE_OF_CONDUCT.md, SECURITY.md, SUPPORT.md)
+- GitHub issue templates for bug reports and feature requests
+- Pull request template with development checklist
+- GitHub Sponsors configuration (FUNDING.yml)
 - MIT LICENSE file for open source compliance
 - Comprehensive test suite with Jest and TypeScript
 - CONTRIBUTING.md with development guidelines
 - Logo/favicon for MCP directory submissions
 - MCP compatibility badge in README
+
+### Changed
+- Updated all contact information to use devops@passgage.com for unified community support
 
 ## [1.0.2] - 2024-08-30
 

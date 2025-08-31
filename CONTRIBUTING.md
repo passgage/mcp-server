@@ -176,7 +176,7 @@ Feature requests are welcome! Please:
 **Do not report security vulnerabilities in public issues.**
 
 For security concerns:
-- Email: security@passgage.com
+- Email: devops@passgage.com
 - Include detailed reproduction steps
 - Allow reasonable time for response
 
@@ -203,7 +203,7 @@ By contributing, you agree that your contributions will be licensed under the MI
 ## 📞 Questions?
 
 - Create a GitHub issue for technical questions
-- Email: support@passgage.com for general inquiries
+- Email: devops@passgage.com for general inquiries
 - Check existing documentation and issues first
 
 Thank you for contributing to the Passgage MCP Server! 🎉

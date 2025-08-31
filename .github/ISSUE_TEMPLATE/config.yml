@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+defaults:
+  - name: bug_report
+    label: bug
+    description: Report a reproducible bug or issue to help us improve.
+  - name: feature_request
+    label: enhancement
+    description: Suggest an idea or enhancement for this project.

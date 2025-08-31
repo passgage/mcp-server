@@ -790,12 +790,67 @@ The server provides comprehensive error handling:
 
 ## Contributing
 
+We welcome contributions! Please follow these guidelines for the best experience:
+
+### Development Workflow
+
 1. Fork the repository
-2. Create a feature branch
-3. Make your changes
+2. Create a feature branch: `git checkout -b feature/your-feature`
+3. Make your changes following our conventions
 4. Add tests for new functionality
-5. Run linting and type checking
+5. Run the development checks:
+   ```bash
+   npm run type-check
+   npm run lint
+   npm test
+   npm run build
+   ```
 6. Submit a pull request
+
+### Commit Convention
+
+This project uses [Conventional Commits](https://www.conventionalcommits.org/) for automated versioning and changelog generation. Use the following format:
+
+```
+<type>[optional scope]: <description>
+
+[optional body]
+
+[optional footer(s)]
+```
+
+#### Types:
+- **feat**: A new feature (triggers minor version bump)
+- **fix**: A bug fix (triggers patch version bump)
+- **docs**: Documentation changes (triggers patch version bump)
+- **refactor**: Code changes that neither fix bugs nor add features (triggers patch version bump)
+- **perf**: Performance improvements (triggers patch version bump)
+- **test**: Adding or fixing tests
+- **build**: Changes to build system or dependencies
+- **ci**: Changes to CI configuration
+- **chore**: Other changes that don't modify src or test files
+
+#### Examples:
+```bash
+git commit -m "feat: add bulk user import tool"
+git commit -m "fix: resolve authentication timeout issue"
+git commit -m "docs: update installation instructions"
+git commit -m "feat!: restructure API authentication (BREAKING CHANGE)"
+```
+
+#### Breaking Changes:
+Add `!` after the type or include `BREAKING CHANGE:` in the footer to trigger a major version bump:
+```bash
+git commit -m "feat!: change API key format requirement"
+```
+
+### Automated Releases
+
+Releases are automated via GitHub Actions:
+- Push to `main` branch triggers automated testing, building, versioning, and npm publishing
+- Version numbers are determined by commit message types
+- Changelog is automatically generated and updated
+- NPM package is published with proper provenance
 
 
 ## Troubleshooting

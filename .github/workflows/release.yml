@@ -1,0 +1,115 @@
+name: Release and Publish
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run type check
+        run: npm run type-check
+
+      - name: Run linter
+        run: npm run lint
+
+      - name: Run tests
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+  release:
+    name: Release and Publish
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npx semantic-release
+
+      - name: Update server.json version
+        if: success()
+        run: |
+          # Get the new version from package.json
+          NEW_VERSION=$(node -p "require('./package.json').version")
+          # Update server.json with the new version
+          sed -i "s/\"version\": \"[^\"]*\"/\"version\": \"$NEW_VERSION\"/g" server.json
+          
+          # Check if there are changes to commit
+          if [[ -n $(git status --porcelain server.json) ]]; then
+            git config --local user.email "action@github.com"
+            git config --local user.name "GitHub Action"
+            git add server.json
+            git commit -m "chore: update server.json version to $NEW_VERSION [skip ci]"
+            git push origin main
+          fi
+
+      - name: Download MCP Publisher
+        if: success()
+        run: |
+          # Download the latest MCP publisher CLI
+          curl -L -o mcp-publisher https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher-linux-amd64
+          chmod +x mcp-publisher
+
+      - name: Login to MCP Registry
+        if: success()
+        run: |
+          # Login using GitHub OIDC
+          ./mcp-publisher login github-oidc
+
+      - name: Publish to MCP Registry
+        if: success()
+        run: |
+          # Publish server.json to MCP Registry
+          ./mcp-publisher publish
