@@ -1,3 +1,13 @@
+## 1.0.0 (2025-08-31)
+
+### Features
+
+* Add comprehensive community infrastructure and MCP Registry automation ([5a1a4fa](https://github.com/passgage/mcp-server/commit/5a1a4fa1ad6b566e66bdf42426e6b04a69b710f2))
+
+### Bug Fixes
+
+* Resolve security vulnerabilities and test failures ([b13fbeb](https://github.com/passgage/mcp-server/commit/b13fbebf194df04e423416ec341d9a0666534a3f))
+
 # Changelog
 
 All notable changes to the Passgage MCP Server will be documented in this file.
