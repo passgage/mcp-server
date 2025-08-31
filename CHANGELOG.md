@@ -1,3 +1,9 @@
+## [1.0.6](https://github.com/passgage/mcp-server/compare/v1.0.5...v1.0.6) (2025-08-31)
+
+### Bug Fixes
+
+* Fix GitHub Actions authentication for server.json updates ([feb62df](https://github.com/passgage/mcp-server/commit/feb62dfbe853294145d32b7f665ae4f4d8f0b9d3))
+
 ## [1.0.5](https://github.com/passgage/mcp-server/compare/v1.0.4...v1.0.5) (2025-08-31)
 
 ### Bug Fixes
