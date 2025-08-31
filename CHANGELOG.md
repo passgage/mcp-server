@@ -1,3 +1,9 @@
+## [1.2.1](https://github.com/passgage/mcp-server/compare/v1.2.0...v1.2.1) (2025-08-31)
+
+### Bug Fixes
+
+* Simplify MCP Registry server name format for better compatibility ([b249aed](https://github.com/passgage/mcp-server/commit/b249aed1f6777deb28999434b0dfa04f6194e1ec))
+
 ## [1.2.0](https://github.com/passgage/mcp-server/compare/v1.1.2...v1.2.0) (2025-08-31)
 
 ### Features
