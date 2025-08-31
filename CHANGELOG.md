@@ -1,3 +1,9 @@
+## [1.0.1](https://github.com/passgage/mcp-server/compare/v1.0.0...v1.0.1) (2025-08-31)
+
+### Bug Fixes
+
+* Temporarily disable MCP Registry publishing ([d11e4cd](https://github.com/passgage/mcp-server/commit/d11e4cd6ae16162f5f848d9c9ab5e22395d19521))
+
 ## 1.0.0 (2025-08-31)
 
 ### Features
