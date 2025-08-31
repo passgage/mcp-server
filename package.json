@@ -21,7 +21,11 @@
     "api",
     "server",
     "claude",
-    "ai"
+    "ai",
+    "workforce",
+    "hr",
+    "time-tracking",
+    "leave-management"
   ],
   "author": "Gokhan Almas",
   "license": "MIT",
