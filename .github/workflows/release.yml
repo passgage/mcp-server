@@ -160,10 +160,11 @@ jobs:
           echo "📄 server.json content:"
           cat server.json
           
-          # Publish to MCP Registry
+          # Publish to MCP Registry (don't fail workflow if registry has issues)
           if /tmp/mcp-publisher publish; then
             echo "✅ Successfully published to MCP Registry!"
           else
-            echo "❌ Failed to publish to MCP Registry"
-            exit 1
+            echo "⚠️ Failed to publish to MCP Registry (registry may have temporary issues)"
+            echo "This is often due to MCP Registry being in preview or having server-side issues"
+            echo "The NPM package was successfully published and the workflow continues"
           fi
