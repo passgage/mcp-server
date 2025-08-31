@@ -1,3 +1,9 @@
+## [1.0.5](https://github.com/passgage/mcp-server/compare/v1.0.4...v1.0.5) (2025-08-31)
+
+### Bug Fixes
+
+* Add workforce management keywords for better NPM discoverability ([3e10af9](https://github.com/passgage/mcp-server/commit/3e10af92d358c839d0f4200a419d30d53b00d33d))
+
 ## [1.0.4](https://github.com/passgage/mcp-server/compare/v1.0.3...v1.0.4) (2025-08-31)
 
 ### Bug Fixes
