@@ -167,6 +167,13 @@ jobs:
           echo "📄 server.json content:"
           cat server.json
           
+          # Validate server.json format
+          echo "🔍 Validating server.json format..."
+          echo "Server name: $(jq -r '.name' server.json)"
+          echo "Server version: $(jq -r '.version_detail.version' server.json)"
+          echo "Package version: $(jq -r '.packages[0].version' server.json)"
+          echo "Repository URL: $(jq -r '.repository.url' server.json)"
+          
           # Publish to MCP Registry with retry mechanism
           echo "🚀 Attempting to publish to MCP Registry..."
           

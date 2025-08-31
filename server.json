@@ -1,6 +1,6 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-07-09/server.schema.json",
-  "name": "io.github.passgage/mcp-server",
+  "name": "passgage-mcp-server",
   "description": "Workforce management with 130+ tools for HR, time tracking, approvals, employee management",
   "status": "active",
   "repository": {
