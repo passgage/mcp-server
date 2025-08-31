@@ -1,3 +1,10 @@
+## [1.0.4](https://github.com/passgage/mcp-server/compare/v1.0.3...v1.0.4) (2025-08-31)
+
+### Bug Fixes
+
+* Resolve NPM version conflict for semantic-release ([46c8ec2](https://github.com/passgage/mcp-server/commit/46c8ec2f0a8068111a36d91f2812d33cb44c3a36))
+* Temporarily disable MCP Registry publishing ([d11e4cd](https://github.com/passgage/mcp-server/commit/d11e4cd6ae16162f5f848d9c9ab5e22395d19521))
+
 ## [1.0.1](https://github.com/passgage/mcp-server/compare/v1.0.0...v1.0.1) (2025-08-31)
 
 ### Bug Fixes
