@@ -1,3 +1,9 @@
+## [1.2.0](https://github.com/passgage/mcp-server/compare/v1.1.2...v1.2.0) (2025-08-31)
+
+### Features
+
+* Enhance MCP Registry publishing with health check and retry mechanism ([f8bf499](https://github.com/passgage/mcp-server/commit/f8bf49979295d85fa669b84326b3b3fdd549894f))
+
 ## [1.1.2](https://github.com/passgage/mcp-server/compare/v1.1.1...v1.1.2) (2025-08-31)
 
 ### Bug Fixes

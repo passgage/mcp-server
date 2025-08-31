@@ -1,6 +1,6 @@
 {
   "name": "passgage-mcp-server",
-  "version": "1.1.2",
+  "version": "1.2.0",
   "description": "Model Context Protocol (MCP) server for Passgage Public API integration",
   "type": "module",
   "main": "dist/index.js",
