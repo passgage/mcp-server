@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a comprehensive Passgage API MCP (Model Context Protocol) Server project built with TypeScript and Node.js. The server provides 130+ tools to interact with the complete Passgage Public API surface area, enabling AI assistants like Claude to manage workforce operations, approvals, time tracking, and more.
+This is a comprehensive Passgage API MCP (Model Context Protocol) Server built with TypeScript and Node.js. The server provides 130+ tools to interact with the complete Passgage Public API surface area, enabling AI assistants like Claude to manage workforce operations, approvals, time tracking, and more.
 
 ## Development Commands
 
@@ -17,8 +17,8 @@ This is a comprehensive Passgage API MCP (Model Context Protocol) Server project
 ### Code Quality
 - `npm run lint` - Run ESLint on TypeScript files in src/ directory
 - `npm run lint:fix` - Auto-fix linting issues
-- `npm test` - Run Jest tests (test framework configured but no tests implemented yet)
-- `npm run type-check` - TypeScript type checking without compilation (recommended before commits)
+- `npm test` - Run Jest tests with NODE_OPTIONS='--experimental-vm-modules'
+- `npm run type-check` - TypeScript type checking (recommended before commits)
 
 ## Project Architecture
 
@@ -35,7 +35,7 @@ This is a comprehensive Passgage API MCP (Model Context Protocol) Server project
 
 ### MCP Tools Structure
 The server provides 133 total tools:
-- **4 Authentication tools** - JWT session management
+- **8 Authentication tools** - JWT session and mode management
 - **125 CRUD tools** - 5 operations × 25 services (list, get, create, update, delete)
 - **8 Specialized tools** - File upload, bulk approvals, search, dashboard stats
 
@@ -71,7 +71,7 @@ PASSGAGE_DEBUG=false
 - **Ransack Filtering** - Complex query syntax with 20+ operators (_eq, _cont, _in, etc.)
 - **Pagination** - Configurable page size (max 50)
 - **Error Handling** - Comprehensive API error mapping
-- **Type Safety** - Full TypeScript coverage
+- **Type Safety** - Full TypeScript coverage with strict mode
 - **Auto-retry** - Intelligent JWT token refresh
 
 ## Development Patterns
@@ -85,7 +85,7 @@ The server uses a class-based architecture (`PassgageMCPServer`) with:
 ### Adding New Tools
 1. Define tool schema with `inputSchema` in appropriate file under `src/tools/`
 2. Implement handler function with consistent error handling pattern
-3. Add tool name pattern to router logic in `src/index.ts` (e.g., prefix matching)
+3. Add tool name pattern to router logic in `src/index.ts:61-81` (prefix matching)
 4. Update TypeScript types in `src/types/api.ts` if adding new API endpoints
 
 ### Tool Naming Convention
@@ -116,6 +116,12 @@ All tools return consistent format:
 
 ## Testing and Deployment
 
+### Test Configuration
+- **Jest** with ts-jest preset for ESM modules
+- Test files in `__tests__/` directory
+- Coverage reporting to `coverage/` directory
+- Run a single test: `npm test -- --testNamePattern="pattern"`
+
 ### MCP Integration
 Add to Claude Desktop config:
 ```json
@@ -135,7 +141,7 @@ Add to Claude Desktop config:
 - `axios` - HTTP client with request/response interceptors for auth and error handling
 - `dotenv` - Environment configuration management
 - `tsx` - TypeScript execution for development (replaces ts-node)
-- TypeScript toolchain with strict mode and Node16 module resolution
+- TypeScript 5.6+ with strict mode and Node16 module resolution
 
 ### Build Output
 - **dist/** - Compiled JavaScript output from TypeScript compilation
@@ -143,5 +149,5 @@ Add to Claude Desktop config:
 - The server must be built (`npm run build`) before production deployment
 
 ### Environment Requirements
-- **Node.js >=18.0.0** - Required for MCP SDK compatibility
+- **Node.js >=22.0.0** - Required for MCP SDK compatibility (see package.json:50)
 - **TypeScript 5.6+** - For latest language features and strict type checking
