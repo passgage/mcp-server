@@ -137,6 +137,13 @@ jobs:
           if /tmp/mcp-publisher login github-oidc; then
             echo "✅ Successfully logged in to MCP Registry"
             echo "MCP_REGISTRY_AUTHENTICATED=true" >> $GITHUB_ENV
+            
+            # Quick health check - try to query registry
+            echo "🔍 Checking MCP Registry health..."
+            curl -s --connect-timeout 10 --max-time 30 \
+              "https://registry.modelcontextprotocol.io/health" \
+              && echo "✅ Registry health check passed" \
+              || echo "⚠️ Registry health check failed (may affect publishing)"
           else
             echo "❌ Failed to login to MCP Registry (may be in preview)"
             echo "MCP_REGISTRY_AUTHENTICATED=false" >> $GITHUB_ENV
@@ -160,11 +167,30 @@ jobs:
           echo "📄 server.json content:"
           cat server.json
           
-          # Publish to MCP Registry (don't fail workflow if registry has issues)
-          if /tmp/mcp-publisher publish; then
-            echo "✅ Successfully published to MCP Registry!"
-          else
-            echo "⚠️ Failed to publish to MCP Registry (registry may have temporary issues)"
-            echo "This is often due to MCP Registry being in preview or having server-side issues"
-            echo "The NPM package was successfully published and the workflow continues"
-          fi
+          # Publish to MCP Registry with retry mechanism
+          echo "🚀 Attempting to publish to MCP Registry..."
+          
+          MAX_RETRIES=3
+          RETRY_COUNT=0
+          PUBLISH_SUCCESS=false
+          
+          while [ $RETRY_COUNT -lt $MAX_RETRIES ] && [ "$PUBLISH_SUCCESS" = false ]; do
+            RETRY_COUNT=$((RETRY_COUNT + 1))
+            echo "📤 Publish attempt $RETRY_COUNT of $MAX_RETRIES..."
+            
+            if /tmp/mcp-publisher publish; then
+              echo "✅ Successfully published to MCP Registry!"
+              echo "🎉 Server is now available at: https://registry.modelcontextprotocol.io"
+              PUBLISH_SUCCESS=true
+            else
+              if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+                echo "⚠️ Publish attempt $RETRY_COUNT failed, retrying in 10 seconds..."
+                sleep 10
+              else
+                echo "❌ All publish attempts failed"
+                echo "⚠️ Failed to publish to MCP Registry (registry may have temporary issues)"
+                echo "This is often due to MCP Registry being in preview or having server-side issues"
+                echo "The NPM package was successfully published and the workflow continues"
+              fi
+            fi
+          done
