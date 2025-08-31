@@ -97,21 +97,26 @@ jobs:
             git push origin main
           fi
 
-      - name: Download MCP Publisher
-        if: success()
-        run: |
-          # Download the latest MCP publisher CLI
-          curl -L -o mcp-publisher https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher-linux-amd64
-          chmod +x mcp-publisher
+      # TODO: Enable MCP Registry publishing when it's GA
+      # Currently disabled as MCP Registry is in preview and binary is not yet available
+      # - name: Setup MCP Publisher
+      #   if: success()
+      #   run: |
+      #     # Clone MCP Registry and build publisher
+      #     git clone https://github.com/modelcontextprotocol/registry.git /tmp/mcp-registry
+      #     cd /tmp/mcp-registry
+      #     cd cmd/publisher
+      #     go build -o /tmp/mcp-publisher .
+      #     chmod +x /tmp/mcp-publisher
 
-      - name: Login to MCP Registry
-        if: success()
-        run: |
-          # Login using GitHub OIDC
-          ./mcp-publisher login github-oidc
+      # - name: Login to MCP Registry
+      #   if: success()
+      #   run: |
+      #     # Login using GitHub OIDC
+      #     /tmp/mcp-publisher login github-oidc
 
-      - name: Publish to MCP Registry
-        if: success()
-        run: |
-          # Publish server.json to MCP Registry
-          ./mcp-publisher publish
+      # - name: Publish to MCP Registry
+      #   if: success()
+      #   run: |
+      #     # Publish server.json to MCP Registry
+      #     /tmp/mcp-publisher publish
