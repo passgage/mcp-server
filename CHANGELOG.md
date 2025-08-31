@@ -1,3 +1,9 @@
+## [1.1.0](https://github.com/passgage/mcp-server/compare/v1.0.6...v1.1.0) (2025-08-31)
+
+### Features
+
+* Enable MCP Registry publishing in GitHub Actions ([26f94b0](https://github.com/passgage/mcp-server/commit/26f94b010d3178c7caf2a17c2b6ee2caf087fa96))
+
 ## [1.0.6](https://github.com/passgage/mcp-server/compare/v1.0.5...v1.0.6) (2025-08-31)
 
 ### Bug Fixes
