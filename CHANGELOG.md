@@ -1,3 +1,9 @@
+## [1.1.1](https://github.com/passgage/mcp-server/compare/v1.1.0...v1.1.1) (2025-08-31)
+
+### Bug Fixes
+
+* Correct MCP Registry authentication flow in GitHub Actions ([028e723](https://github.com/passgage/mcp-server/commit/028e7236951f4a961ae34f8a0548ef1f6b854018))
+
 ## [1.1.0](https://github.com/passgage/mcp-server/compare/v1.0.6...v1.1.0) (2025-08-31)
 
 ### Features
