@@ -57,8 +57,18 @@ export class PassgageAPIClient {
         
         if (this.config.debug) {
           const method = config.method ? config.method.toUpperCase() : 'UNKNOWN';
+          // Create sanitized headers for logging (remove sensitive data)
+          const headersForLog = config.headers ? Object.keys(config.headers).reduce((acc, key) => {
+            if (key.toLowerCase() === 'authorization') {
+              acc[key] = '[REDACTED]';
+            } else {
+              acc[key] = config.headers![key];
+            }
+            return acc;
+          }, {} as Record<string, any>) : {};
+          
           console.log(`[Passgage API] ${method} ${config.url}`, {
-            headers: config.headers,
+            headers: headersForLog,
             params: config.params,
             data: config.data
           });

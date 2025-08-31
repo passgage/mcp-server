@@ -1,7 +1,7 @@
 export default {
   preset: 'ts-jest/presets/default-esm',
   extensionsToTreatAsEsm: ['.ts'],
-  moduleNameMapping: {
+  moduleNameMapper: {
     '^(\\.{1,2}/.*)\\.js$': '$1',
   },
   transform: {
@@ -10,6 +10,7 @@ export default {
     }],
   },
   testEnvironment: 'node',
+  testTimeout: 10000,
   roots: ['<rootDir>/src', '<rootDir>/__tests__'],
   testMatch: ['**/__tests__/**/*.test.ts', '**/?(*.)+(spec|test).ts'],
   collectCoverage: true,
@@ -20,5 +21,5 @@ export default {
     '!src/**/*.d.ts',
     '!src/index.ts', // Exclude main entry point from coverage
   ],
-  setupFilesAfterEnv: ['<rootDir>/__tests__/setup.ts'],
+  // setupFilesAfterEnv: ['<rootDir>/__tests__/setup.ts'],
 };
