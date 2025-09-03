@@ -47,7 +47,7 @@ async function bootstrap() {
     logger.info(`Registered ${resourceRegistry.getResourceCount()} resources`);
 
     // Register prompts
-    const promptRegistry = new PromptRegistry(server);
+    const promptRegistry = new PromptRegistry(server, apiClient);
     await promptRegistry.registerAll();
     logger.info(`Registered ${promptRegistry.getPromptCount()} prompts`);
 

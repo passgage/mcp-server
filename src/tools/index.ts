@@ -39,11 +39,35 @@ export class ToolRegistry {
     // Register built-in tools
     await this.registerBuiltinTools();
     
+    // Register Prompt Discovery tools
+    await this.registerPromptDiscoveryTools();
+    
     // Auto-discover Passgage tools
     await this.autoDiscoverTools();
     
     // Setup MCP handlers
     this.setupHandlers();
+  }
+
+  /**
+   * Register Prompt Discovery tools
+   */
+  private async registerPromptDiscoveryTools(): Promise<void> {
+    try {
+      const {
+        ListPromptsTool,
+        PromptHelpTool,
+        SuggestPromptsTool
+      } = await import('./prompt-discovery.tool.js');
+      
+      this.registerTool(new ListPromptsTool(this.apiClient));
+      this.registerTool(new PromptHelpTool(this.apiClient));
+      this.registerTool(new SuggestPromptsTool(this.apiClient));
+      
+      logger.debug('Prompt Discovery tools registered');
+    } catch (error) {
+      logger.error('Failed to register Prompt Discovery tools:', { error });
+    }
   }
 
   /**
