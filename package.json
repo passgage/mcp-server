@@ -3,15 +3,19 @@
   "version": "1.2.0",
   "description": "Model Context Protocol (MCP) server for Passgage Public API integration",
   "type": "module",
-  "main": "dist/index.js",
+  "main": "dist/main.js",
   "scripts": {
     "build": "tsc",
-    "dev": "tsx src/index.ts",
-    "start": "node dist/index.js",
+    "dev": "tsx scripts/dev.ts",
+    "dev:old": "tsx src/index.ts",
+    "dev:main": "tsx src/main.ts",
+    "start": "node dist/main.js",
+    "start:old": "node dist/index.js",
     "test": "NODE_OPTIONS='--experimental-vm-modules' jest",
     "lint": "eslint src --ext .ts,.tsx",
     "lint:fix": "eslint src --ext .ts,.tsx --fix",
     "type-check": "tsc --noEmit",
+    "create-tool": "tsx scripts/create-tool.ts",
     "semantic-release": "semantic-release"
   },
   "keywords": [
@@ -32,7 +36,9 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^0.6.0",
     "axios": "^1.7.7",
-    "dotenv": "^16.4.5"
+    "dotenv": "^16.4.5",
+    "pino": "^9.0.0",
+    "zod": "^3.23.0"
   },
   "devDependencies": {
     "@semantic-release/changelog": "^6.0.3",
@@ -45,6 +51,7 @@
     "conventional-changelog-conventionalcommits": "^9.1.0",
     "eslint": "^9.14.0",
     "jest": "^29.7.0",
+    "pino-pretty": "^11.0.0",
     "semantic-release": "^24.2.7",
     "ts-jest": "^29.1.1",
     "tsx": "^4.19.1",
@@ -69,6 +76,6 @@
     "CHANGELOG.md"
   ],
   "bin": {
-    "passgage-mcp-server": "./dist/index.js"
+    "passgage-mcp-server": "./dist/main.js"
   }
 }

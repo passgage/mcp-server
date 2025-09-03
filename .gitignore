@@ -97,3 +97,11 @@ jspm_packages/
 
 # Stores VSCode versions used for testing VSCode extensions
 .vscode-test
+
+# Local test configs with credentials
+configs/*-mode.json
+configs/*-production.json
+!configs/README.md
+
+# Test scenarios (may contain sensitive data)
+test-scenarios/*.local.md

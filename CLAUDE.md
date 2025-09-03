@@ -11,27 +11,32 @@ This is a comprehensive Passgage API MCP (Model Context Protocol) Server built w
 ### Build and Run
 - `npm run build` - Compile TypeScript to JavaScript
 - `npm run dev` - Development mode with hot reload using tsx
-- `npm start` - Start production server from dist/
+- `npm start` - Start production server from dist/main.js (note: main.js not index.js)
 - `npm run type-check` - TypeScript type checking without compilation
 
 ### Code Quality
 - `npm run lint` - Run ESLint on TypeScript files in src/ directory
 - `npm run lint:fix` - Auto-fix linting issues
 - `npm test` - Run Jest tests with NODE_OPTIONS='--experimental-vm-modules'
+- `npm test -- --testNamePattern="pattern"` - Run specific test by pattern
 - `npm run type-check` - TypeScript type checking (recommended before commits)
 
 ## Project Architecture
 
 ### Core Components
+- **`src/main.ts`** - Main MCP server entry point (production executable)
 - **`src/api/client.ts`** - Passgage API client with JWT auth, auto-refresh, error handling
 - **`src/types/api.ts`** - Complete TypeScript definitions for Passgage API
-- **`src/config/index.ts`** - Environment configuration and validation
-- **`src/index.ts`** - MCP server implementation with stdio transport
+- **`src/config/`** - Configuration management (env.ts, logger.ts, index.ts)
+- **`src/tools/index.ts`** - Tool registry and orchestration
+- **`src/resources/index.ts`** - Resource registry for MCP resources
+- **`src/prompts/index.ts`** - Prompt registry with built-in troubleshooting/onboarding prompts
 
-### Tool Categories
-- **`src/tools/auth.ts`** - Authentication tools (login, logout, refresh, status)
-- **`src/tools/crud.ts`** - CRUD operations for 25+ Passgage services (125 tools)
-- **`src/tools/specialized.ts`** - Advanced tools (file upload, approvals, search, export)
+### Tool Structure (Modern Architecture)
+- **`src/tools/passgage/`** - Service-specific tool implementations (users-service.tool.ts, etc.)
+- **`src/tools/auth.tool.ts`** - Authentication tools (login, logout, refresh, status)
+- **`src/tools/base.tool.ts`** - Base tool class with common functionality
+- **Legacy tools** - `auth.ts`, `crud.ts`, `specialized.ts` (may be deprecated)
 
 ### MCP Tools Structure
 The server provides 133 total tools:
@@ -117,10 +122,12 @@ All tools return consistent format:
 ## Testing and Deployment
 
 ### Test Configuration
-- **Jest** with ts-jest preset for ESM modules
+- **Jest** with ts-jest preset for ESM modules (NODE_OPTIONS='--experimental-vm-modules' required)
 - Test files in `__tests__/` directory
 - Coverage reporting to `coverage/` directory
-- Run a single test: `npm test -- --testNamePattern="pattern"`
+- Run specific test file: `npm test __tests__/path/to/test.ts`
+- Run by pattern: `npm test -- --testNamePattern="pattern"`
+- Run single test suite: `npm test __tests__/utils/errors.test.ts`
 
 ### MCP Integration
 Add to Claude Desktop config:
@@ -145,9 +152,70 @@ Add to Claude Desktop config:
 
 ### Build Output
 - **dist/** - Compiled JavaScript output from TypeScript compilation
-- **dist/index.js** - Main executable entry point for production
+- **dist/main.js** - Main executable entry point for production (CLI binary)
+- **dist/index.js** - Legacy entry point (may be deprecated)
 - The server must be built (`npm run build`) before production deployment
 
 ### Environment Requirements
-- **Node.js >=22.0.0** - Required for MCP SDK compatibility (see package.json:50)
+- **Node.js >=22.0.0** - Required for MCP SDK compatibility (see package.json:61)
 - **TypeScript 5.6+** - For latest language features and strict type checking
+
+## Key Development Patterns
+
+### Error Handling Architecture
+The codebase uses a sophisticated error handling system in `src/utils/errors.ts`:
+
+- **PassgageError** - Base error class with constructor overloading for (message, code, details) or (message, code, statusCode, details)
+- **Circular reference handling** - toJSON() method safely handles circular objects without throwing
+- **Error mapping** - createErrorFromResponse() maps HTTP status codes to specific error types
+- **Error inheritance** - ValidationError, AuthenticationError, NotFoundError, etc. extend PassgageError
+
+### Validation Patterns
+Comprehensive validation utilities in `src/utils/validation.ts`:
+
+- **Zod integration** - validateInput() and safeParse() for schema validation
+- **Individual validators** - validateEmail(), validateUUID(), validateDate(), validateRequired()
+- **Schema creation** - createValidationSchema() for dynamic schema generation
+- **Ransack validation** - validateRansackQuery() for complex API query validation
+
+### API Client Architecture
+The PassgageAPIClient (`src/api/client.ts`) implements:
+
+- **Dual authentication modes** - Company API key vs User JWT tokens
+- **Automatic token refresh** - JWT tokens auto-refresh with proper error handling
+- **Request/response interceptors** - Comprehensive logging and error handling
+- **Method consistency** - setApiKey(), getAuthMode(), hasValidAuth(), isAuthenticated()
+
+### Testing Practices
+When working with tests, be aware of:
+
+- **ES Modules configuration** - All tests require NODE_OPTIONS='--experimental-vm-modules'
+- **Mock patterns** - winston, MCP SDK components use specific mocking approaches
+- **Async imports** - Use `await import()` instead of require() in ES module tests
+- **Test isolation** - Each test file uses beforeEach/afterEach for clean state
+
+### Common Development Issues
+
+#### TypeScript Configuration
+- Uses `"module": "Node16"` with `.js` imports for ES modules
+- Strict mode enabled with comprehensive type checking
+- All imports must use `.js` extension even for `.ts` files
+
+#### Test Mocking Patterns
+- **Winston logger** - Mock at module level with jest.mock() before imports
+- **MCP SDK** - Components require manual mock implementation 
+- **Circular references** - Handle with WeakSet pattern in JSON serialization
+
+#### Build Process
+- Entry point is `src/main.ts` (not `src/index.ts`)
+- Binary target is `dist/main.js` configured in package.json
+- Build must complete successfully before running tests or deployment
+
+# important-instruction-reminders
+Do what has been asked; nothing more, nothing less.
+NEVER create files unless they're absolutely necessary for achieving your goal.
+ALWAYS prefer editing an existing file to creating a new one.
+NEVER proactively create documentation files (*.md) or README files. Only create documentation files if explicitly requested by the User.
+
+      
+      IMPORTANT: this context may or may not be relevant to your tasks. You should not respond to this context unless it is highly relevant to your task.

@@ -46,29 +46,20 @@ export class PassgageAPIClient {
   }
 
   private setupInterceptors(): void {
+    // Request interceptor for token management
     this.client.interceptors.request.use(
       (config) => {
         // Set authorization header based on current auth mode
         if (this.authContext.mode === 'user' && this.authContext.userJwtToken) {
-          config.headers['Authorization'] = `Bearer ${this.authContext.userJwtToken}`;
+          config.headers.Authorization = `Bearer ${this.authContext.userJwtToken}`;
         } else if (this.authContext.mode === 'company' && this.authContext.companyApiKey) {
-          config.headers['Authorization'] = `Bearer ${this.authContext.companyApiKey}`;
+          config.headers.Authorization = `Bearer ${this.authContext.companyApiKey}`;
         }
         
         if (this.config.debug) {
-          const method = config.method ? config.method.toUpperCase() : 'UNKNOWN';
-          // Create sanitized headers for logging (remove sensitive data)
-          const headersForLog = config.headers ? Object.keys(config.headers).reduce((acc, key) => {
-            if (key.toLowerCase() === 'authorization') {
-              acc[key] = '[REDACTED]';
-            } else {
-              acc[key] = config.headers![key];
-            }
-            return acc;
-          }, {} as Record<string, any>) : {};
-          
+          const method = config.method?.toUpperCase() || 'UNKNOWN';
           console.log(`[Passgage API] ${method} ${config.url}`, {
-            headers: headersForLog,
+            mode: this.authContext.mode,
             params: config.params,
             data: config.data
           });
@@ -325,6 +316,10 @@ export class PassgageAPIClient {
 
   setApiKey(apiKey: string): void {
     this.setCompanyMode(apiKey);
+  }
+
+  hasValidAuth(): boolean {
+    return this.isAuthenticated();
   }
 
   disconnect(): void {
