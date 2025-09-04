@@ -1,7 +1,7 @@
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
-import { JSONRPCMessage, JSONRPCResponse } from '@modelcontextprotocol/sdk/types.js';
+import { JSONRPCMessage, JSONRPCResponse, JSONRPCError } from '@modelcontextprotocol/sdk/types.js';
 import { logger } from '../config/logger.js';
-import { sessionManager, SessionManager } from '../utils/session.js';
+import { SessionManager } from '../utils/session.js';
 import { SecurityManager } from '../utils/security.js';
 // Removed unused crypto imports
 
@@ -54,6 +54,8 @@ export class HttpTransport implements Transport {
   private sessionManager: SessionManager;
   private securityManager: SecurityManager;
   private currentSessionContext?: SessionContext;
+  // private mcpServer?: any; // Reference to the MCP server (unused for now)
+  private toolRegistry?: any; // Reference to the tool registry for direct tool execution
 
   constructor(options: HttpTransportOptions) {
     this.options = {
@@ -69,7 +71,7 @@ export class HttpTransport implements Transport {
       ...options
     };
     
-    this.sessionManager = options.sessionManager || sessionManager;
+    this.sessionManager = options.sessionManager || new SessionManager();
     
     // Initialize security manager
     this.securityManager = new SecurityManager({
@@ -237,33 +239,163 @@ export class HttpTransport implements Transport {
   }
 
   /**
-   * Process JSON-RPC message through MCP handlers
+   * Set the tool registry for direct tool execution
    */
-  private async processMessage(message: JSONRPCMessage, context: SessionContext): Promise<JSONRPCResponse> {
-    return new Promise((resolve) => {
-      // Simulate message processing - in real implementation, this would
-      // be handled by the MCP server's request handlers
-      const response: JSONRPCResponse = {
-        jsonrpc: '2.0',
-        id: 'id' in message ? message.id : 1,
-        result: {
-          success: true,
-          sessionContext: context,
-          message: 'HTTP transport message processing placeholder'
+  setToolRegistry(toolRegistry: any): void {
+    this.toolRegistry = toolRegistry;
+  }
+
+  /**
+   * Process JSON-RPC message through MCP server
+   */
+  private async processMessage(message: JSONRPCMessage, context: SessionContext): Promise<JSONRPCResponse | JSONRPCError> {
+    try {
+      logger.info('Processing message', { 
+        method: 'method' in message ? message.method : 'unknown',
+        messageHandlerCount: this.messageHandlers.size,
+        messageId: 'id' in message ? message.id : null,
+        hasToolRegistry: !!this.toolRegistry
+      });
+
+      // Handle tools/call method directly through tool registry
+      if ('method' in message && message.method === 'tools/call' && this.toolRegistry) {
+        const params = (message.params as any);
+        const toolName = params?.name;
+        const toolArgs = params?.arguments || {};
+
+        if (!toolName) {
+          return {
+            jsonrpc: '2.0',
+            id: ('id' in message ? message.id : 'unknown') as string | number,
+            error: {
+              code: -32602,
+              message: 'Invalid params',
+              data: { reason: 'Tool name is required' }
+            }
+          } as JSONRPCError;
         }
-      };
-      
-      // Trigger message handlers
-      this.messageHandlers.forEach(handler => {
+
         try {
-          handler(message);
+          // Execute tool directly through registry
+          const result = await this.toolRegistry.callTool(toolName, toolArgs, context);
+          return {
+            jsonrpc: '2.0',
+            id: ('id' in message ? message.id : 'unknown') as string | number,
+            result: result
+          };
+        } catch (error: any) {
+          logger.error('Tool execution error:', { toolName, error: error.message });
+          return {
+            jsonrpc: '2.0',
+            id: ('id' in message ? message.id : 'unknown') as string | number,
+            error: {
+              code: -32603,
+              message: 'Tool execution failed',
+              data: { toolName, error: error.message }
+            }
+          } as JSONRPCError;
+        }
+      }
+
+      // Try to process message through message handlers (simulate MCP transport)
+      if (this.messageHandlers.size > 0) {
+        return new Promise((resolve) => {
+          // Set up a one-time response handler
+          const handleResponse = (response: any) => {
+            resolve({
+              jsonrpc: '2.0',
+              id: ('id' in message ? message.id : 'unknown') as string | number,
+              result: response
+            });
+          };
+
+          // Trigger message handlers (this is what the MCP transport does)
+          for (const handler of this.messageHandlers) {
+            try {
+              // The handler should be async and process the message
+              const result = (handler as any)(message);
+              if (result && typeof result.then === 'function') {
+                result.then(handleResponse).catch((error: any) => {
+                  resolve({
+                    jsonrpc: '2.0',
+                    id: ('id' in message ? message.id : 'unknown') as string | number,
+                    error: {
+                      code: -32603,
+                      message: 'Internal error',
+                      data: { error: error.message }
+                    }
+                  } as JSONRPCError);
+                });
+                return;
+              } else if (result) {
+                resolve({
+                  jsonrpc: '2.0',
+                  id: ('id' in message ? message.id : 'unknown') as string | number,
+                  result: result
+                });
+                return;
+              }
+            } catch (error) {
+              logger.error('Message handler error:', error);
+            }
+          }
+
+          // If we reach here, no handler processed the message
+          resolve({
+            jsonrpc: '2.0',
+            id: ('id' in message ? message.id : 'unknown') as string | number,
+            error: {
+              code: -32601,
+              message: 'Method not found',
+              data: { method: 'method' in message ? message.method : 'unknown' }
+            }
+          } as JSONRPCError);
+        });
+      }
+
+      // Fallback to registered handlers
+      let result: any = null;
+      
+      for (const handler of this.messageHandlers) {
+        try {
+          result = await handler(message);
+          if (result) break;
         } catch (error) {
           logger.error('Message handler error:', error);
         }
-      });
-
-      resolve(response);
-    });
+      }
+      
+      // If no handler processed the message, return error
+      if (!result) {
+        return {
+          jsonrpc: '2.0',
+          id: ('id' in message ? message.id : 'unknown') as string | number,
+          error: {
+            code: -32601,
+            message: 'Method not found',
+            data: { method: 'method' in message ? message.method : 'unknown' }
+          }
+        } as JSONRPCError;
+      }
+      
+      return {
+        jsonrpc: '2.0',
+        id: ('id' in message ? message.id : 'unknown') as string | number,
+        result: result
+      };
+      
+    } catch (error: any) {
+      logger.error('Message processing error:', error);
+      return {
+        jsonrpc: '2.0',
+        id: ('id' in message ? message.id : 'unknown') as string | number,
+        error: {
+          code: -32603,
+          message: 'Internal error',
+          data: { error: error.message }
+        }
+      } as JSONRPCError;
+    }
   }
 
 

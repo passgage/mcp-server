@@ -2,8 +2,8 @@ import { z } from 'zod';
 import { BaseTool } from './base.tool.js';
 import { ToolMetadata } from './index.js';
 import { PassgageAPIClient } from '../api/client.js';
-import { sessionManager } from '../utils/session.js';
-// Removed unused imports
+import { SessionManager } from '../utils/session.js';
+// Removed config/env import to avoid validation issues in Cloudflare Workers
 
 // Schema definitions for global session tools
 const sessionLoginSchema = z.object({
@@ -38,8 +38,11 @@ const sessionSwitchModeSchema = z.object({
  * Creates a new session and authenticates with Passgage
  */
 export class SessionLoginTool extends BaseTool {
-  constructor(apiClient: PassgageAPIClient) {
+  private sessionManager: SessionManager;
+
+  constructor(apiClient: PassgageAPIClient, sessionManager: SessionManager) {
     super(apiClient);
+    this.sessionManager = sessionManager;
   }
 
   getMetadata(): ToolMetadata {
@@ -62,7 +65,7 @@ export class SessionLoginTool extends BaseTool {
     try {
       // Create a temporary API client for authentication
       const tempClient = new PassgageAPIClient({
-        baseURL: process.env.PASSGAGE_BASE_URL || 'https://api.passgage.com'
+        baseURL: 'https://api.passgage.com'
       });
 
       // Attempt login
@@ -76,14 +79,14 @@ export class SessionLoginTool extends BaseTool {
       }
 
       // Create session with authenticated credentials
-      const sessionId = await sessionManager.createSession({
+      const sessionId = await this.sessionManager.createSession({
         userEmail: args.email,
         userPassword: args.password,
-        jwtToken: loginResult.data.token
+        jwtToken: loginResult.data?.token
       });
 
       // Get session details
-      const session = await sessionManager.getSession(sessionId);
+      const session = await this.sessionManager.getSession(sessionId);
       if (!session) {
         return this.errorResponse('Failed to create session');
       }
@@ -92,7 +95,7 @@ export class SessionLoginTool extends BaseTool {
         sessionId,
         authMode: session.authMode,
         expiresAt: session.expiresAt.toISOString(),
-        user: loginResult.data.user,
+        user: loginResult.data?.user,
         sessionName: args.sessionName,
         instructions: {
           message: 'Session created successfully! Use this session ID for future requests.',
@@ -142,8 +145,11 @@ export class SessionLoginTool extends BaseTool {
  * Create session tool for advanced use cases
  */
 export class SessionCreateTool extends BaseTool {
-  constructor(apiClient: PassgageAPIClient) {
+  private sessionManager: SessionManager;
+
+  constructor(apiClient: PassgageAPIClient, sessionManager: SessionManager) {
     super(apiClient);
+    this.sessionManager = sessionManager;
   }
 
   getMetadata(): ToolMetadata {
@@ -172,27 +178,27 @@ export class SessionCreateTool extends BaseTool {
       }
 
       // Create session
-      const sessionId = await sessionManager.createSession({
+      const sessionId = await this.sessionManager.createSession({
         apiKey: credentials.apiKey,
         userEmail: credentials.userEmail,
         userPassword: credentials.userPassword
       });
 
       // Get session details
-      const session = await sessionManager.getSession(sessionId);
+      const session = await this.sessionManager.getSession(sessionId);
       if (!session) {
         return this.errorResponse('Failed to create session');
       }
 
       // Switch to preferred auth mode if specified
       if (authMode && authMode !== session.authMode) {
-        const switched = sessionManager.switchMode(sessionId, authMode);
+        const switched = this.sessionManager.switchMode(sessionId, authMode);
         if (!switched) {
           return this.errorResponse(`Cannot switch to ${authMode} mode - credentials not available`);
         }
       }
 
-      const finalSession = await sessionManager.getSession(sessionId);
+      const finalSession = await this.sessionManager.getSession(sessionId);
       
       return this.successResponse({
         sessionId,
@@ -244,8 +250,11 @@ export class SessionCreateTool extends BaseTool {
  * Session status tool
  */
 export class SessionStatusTool extends BaseTool {
-  constructor(apiClient: PassgageAPIClient) {
+  private sessionManager: SessionManager;
+
+  constructor(apiClient: PassgageAPIClient, sessionManager: SessionManager) {
     super(apiClient);
+    this.sessionManager = sessionManager;
   }
 
   getMetadata(): ToolMetadata {
@@ -271,7 +280,7 @@ export class SessionStatusTool extends BaseTool {
       return this.errorResponse('Session ID required or not found in request context');
     }
 
-    const session = await sessionManager.getSession(sessionId);
+    const session = await this.sessionManager.getSession(sessionId);
     if (!session) {
       return this.errorResponse('Session not found or expired');
     }
@@ -320,8 +329,11 @@ export class SessionStatusTool extends BaseTool {
  * List active sessions tool
  */
 export class SessionListTool extends BaseTool {
-  constructor(apiClient: PassgageAPIClient) {
+  private sessionManager: SessionManager;
+
+  constructor(apiClient: PassgageAPIClient, sessionManager: SessionManager) {
     super(apiClient);
+    this.sessionManager = sessionManager;
   }
 
   getMetadata(): ToolMetadata {
@@ -341,13 +353,13 @@ export class SessionListTool extends BaseTool {
   }
 
   async execute(_args: z.infer<typeof sessionListSchema>): Promise<any> {
-    const activeSessionsCount = sessionManager.getActiveSessionsCount();
+    const activeSessionsCount = this.sessionManager.getActiveSessionsCount();
     
     return this.successResponse({
       totalSessions: activeSessionsCount,
       serverStats: {
-        uptime: process.uptime(),
-        memory: process.memoryUsage(),
+        uptime: typeof process !== 'undefined' ? process.uptime() : 'N/A',
+        memory: typeof process !== 'undefined' ? process.memoryUsage() : 'N/A',
         timestamp: new Date().toISOString()
       },
       info: 'Session details are not exposed for security reasons'
@@ -371,8 +383,11 @@ export class SessionListTool extends BaseTool {
  * Switch session auth mode tool
  */
 export class SessionSwitchModeTool extends BaseTool {
-  constructor(apiClient: PassgageAPIClient) {
+  private sessionManager: SessionManager;
+
+  constructor(apiClient: PassgageAPIClient, sessionManager: SessionManager) {
     super(apiClient);
+    this.sessionManager = sessionManager;
   }
 
   getMetadata(): ToolMetadata {
@@ -398,13 +413,13 @@ export class SessionSwitchModeTool extends BaseTool {
       return this.errorResponse('Session ID required');
     }
 
-    const switched = sessionManager.switchMode(sessionId, mode);
+    const switched = this.sessionManager.switchMode(sessionId, mode);
     if (!switched) {
       return this.errorResponse(`Cannot switch to ${mode} mode`, 
         'Required credentials not available in this session');
     }
 
-    const session = await sessionManager.getSession(sessionId);
+    const session = await this.sessionManager.getSession(sessionId);
     return this.successResponse({
       sessionId,
       newMode: mode,

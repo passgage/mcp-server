@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "passgage-local": {
+      "command": "node",
+      "args": ["./dist/main.js"],
+      "cwd": "/Users/gokhanalmas/Developer/projects/passgage/mcp-server",
+      "env": {
+        "PASSGAGE_USER_EMAIL": "passgagetest+demo2@gmail.com",
+        "PASSGAGE_USER_PASSWORD": "QXCj'yg2\"S;Z8+(",
+        "PASSGAGE_BASE_URL": "https://api.passgage.com",
+        "PASSGAGE_TIMEOUT": "30000",
+        "PASSGAGE_DEBUG": "false",
+        "NODE_ENV": "development",
+        "LOG_LEVEL": "info"
+      }
+    }
+  }
+}

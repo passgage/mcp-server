@@ -1,5 +1,5 @@
 import { logger } from '../config/logger.js';
-import { createHash } from 'crypto';
+import { createHash } from 'node:crypto';
 
 export interface SecurityConfig {
   rateLimit: {

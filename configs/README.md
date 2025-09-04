@@ -1,90 +1,143 @@
-# Claude Desktop Configuration Templates
+# Claude Desktop Configuration Files
 
-Bu klasör Passgage MCP Server'ı farklı authentication modlarında test etmek için Claude Desktop config şablonları içerir.
+Bu klasörde Claude Desktop'ı Passgage MCP Server'a bağlamak için gerekli config dosyaları bulunur.
 
-## Local Test Konfigürasyonları
+## 🔧 Local MCP Server Bağlantısı
 
-### 1. User Mode (Tekli Kullanıcı)
-**Dosya**: `claude-desktop-user-mode.json`
+**Dosya**: `claude-desktop-local.json`
+
+Bu config'i Claude Desktop'ın settings dosyasına ekleyin:
+- **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- **Windows**: `%APPDATA%/Claude/claude_desktop_config.json`
+
 ```bash
-# Kendi config dosyanızı kopyalayın ve bilgilerinizi güncelleyin
-cp claude-desktop-user-mode.json ~/.config/Claude/claude_desktop_config.json
+# Önce projeyi build edin
+npm run build
+
+# Sonra Claude Desktop'ı restart edin
 ```
 
-**Test Senaryoları**:
-- "Passgage authentication durumumu kontrol et"
-- "Benim izin taleplerimi listele"
-- "İzin bakiyemi göster"
-- "Son giriş-çıkış zamanlarımı göster"
+## 🌐 Global MCP Server Bağlantısı (HTTP)
 
-### 2. Company Mode (Şirket Admin)
-**Dosya**: `claude-desktop-company-mode.json`
+**Dosya**: `claude-desktop-remote.json`
+
+Remote Cloudflare Workers server'a bağlanmak için:
+
+1. İlk önce session oluşturun:
 ```bash
-cp claude-desktop-company-mode.json ~/.config/Claude/claude_desktop_config.json
+curl -X POST https://passgage-global-mcp-server.passgage.workers.dev \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "tools/call",
+    "params": {
+      "name": "passgage_session_login",
+      "arguments": {
+        "email": "your-email@example.com",
+        "password": "your-password"
+      }
+    }
+  }'
 ```
 
-**Test Senaryoları**:
-- "Tüm bekleyen izin taleplerini listele"
-- "Kullanıcıları departmana göre listele"
-- "Yeni kullanıcı oluştur"
-- "Dashboard istatistikleri getir"
+2. Dönen sessionId'yi not alın
+3. Claude Desktop'da tools kullanırken sessionId'yi argüman olarak geçin
 
-### 3. Dual Mode (Çift Kimlik)
-**Dosya**: `claude-desktop-dual-mode.json`
+## 📊 Cloudflare Logs & Monitoring
+
+Cloudflare'da log'ları aktifleştirdikten sonra:
+
 ```bash
-cp claude-desktop-dual-mode.json ~/.config/Claude/claude_desktop_config.json
+# Canlı log takibi
+npx wrangler tail --format=pretty
+
+# Son log'ları görme
+npx wrangler tail --format=pretty --since=1m
+
+# Specific error filtering
+npx wrangler tail --format=pretty --search="ERROR"
 ```
 
-**Test Senaryoları**:
-- "Company mode'a geç"
-- "User mode'a geç"
-- "Mevcut authentication mode nedir?"
-- "Hangi modlara erişimim var?"
+### Log Configuration (Cloudflare Dashboard)
+1. **Analytics** → **Logs** → **Logpush**
+2. **Real-time Logs** enabled
+3. **Error tracking** enabled
+4. **Custom log fields**: request_id, response_status, exception_details
 
-## Remote Production Konfigürasyonu
+## 🔧 Troubleshooting
 
-### Session-Based Auth (Cloudflare vb. için)
-**Dosya**: `claude-desktop-remote-production.json`
+### 500 Internal Server Error
+1. **Log kontrol**: `npx wrangler tail --format=pretty`
+2. **Environment variables**: wrangler.toml kontrol et
+3. **KV binding**: PASSGAGE_SESSIONS namespace aktif mi?
+4. **Dependencies**: Node.js compatibility kontrol et
 
-Bu konfigürasyon credential'ları environment'da saklamaz, bunun yerine:
-- Runtime'da credential girişi
-- Session-based authentication
-- JWT token management
-- Secure credential handling
+### Authentication Error
+- Session login yapıldığından emin olun
+- SessionId doğru geçildiğinden emin olun  
+- Session expire olmamış olduğundan emin olun (8 saat)
 
-## Kullanım Talimatları
-
-### 1. Local Test İçin:
+### Local Build Issues
 ```bash
-# Tercih ettiğiniz config'i seçin
-cp configs/claude-desktop-user-mode.json ~/.config/Claude/claude_desktop_config.json
+# Dependencies yükleyin
+npm install
 
-# Credentials'ları güncelleyin
-nano ~/.config/Claude/claude_desktop_config.json
+# Build yapın
+npm run build
 
-# Claude Desktop'ı restart edin
-# Test edin
+# Type check yapın
+npm run type-check
+
+# Lint kontrol
+npm run lint
 ```
 
-### 2. Config Değiştirme:
+## 🌍 Environment Variables
+
+### Local Development (.env)
+```env
+PASSGAGE_USER_EMAIL=your-email@example.com
+PASSGAGE_USER_PASSWORD=your-password
+PASSGAGE_BASE_URL=https://api.passgage.com
+PASSGAGE_DEBUG=true
+NODE_ENV=development
+LOG_LEVEL=debug
+```
+
+### Global Deployment (Cloudflare)
+Wrangler.toml'da tanımlı:
+- `PASSGAGE_BASE_URL`
+- `PASSGAGE_TIMEOUT` 
+- `ENCRYPTION_KEY`
+- `SESSION_TIMEOUT_HOURS`
+- `RATE_LIMIT_*`
+
+## 🚀 Deployment Commands
+
 ```bash
-# User mode'a geçiş
-cp configs/claude-desktop-user-mode.json ~/.config/Claude/claude_desktop_config.json
+# Development deploy
+npx wrangler deploy --env development
 
-# Company mode'a geçiş  
-cp configs/claude-desktop-company-mode.json ~/.config/Claude/claude_desktop_config.json
+# Production deploy  
+npx wrangler deploy --env production
 
-# Her değişiklikten sonra Claude Desktop restart gerekli
+# Rollback
+npx wrangler rollback --compatibility-date=previous
 ```
 
-### 3. Path Güncellemeleri:
-Tüm config dosyalarında `"args": ["./dist/main.js"]` path'ini kendi proje path'inize güncelleyin:
-```json
-"args": ["/full/path/to/your/mcp-server/dist/main.js"]
+## 🔐 Security Best Practices
+
+1. **Production Encryption Key**:
+```bash
+openssl rand -hex 32
+# Add to wrangler.toml production vars
 ```
 
-## Güvenlik Notları
+2. **KV Namespace Separation**:
+- Development: `dev-sessions-namespace`
+- Production: `prod-sessions-namespace`
 
-⚠️ **Local configs'de gerçek credentials saklamayın**
-⚠️ **Config dosyalarını git'e commit etmeyin**  
-⚠️ **Production'da session-based auth kullanın**
+3. **Rate Limiting**: 
+- Development: 500 req/min
+- Production: 50 req/min

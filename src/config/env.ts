@@ -47,7 +47,12 @@ const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('production'),
 }).refine(
   (data) => {
-    // Ensure at least one auth method is configured
+    // Skip auth validation for global mode (users provide credentials via session)
+    if (data.MCP_DEPLOYMENT_MODE === 'global') {
+      return true;
+    }
+    
+    // Ensure at least one auth method is configured for local mode
     const hasApiKey = !!data.PASSGAGE_API_KEY;
     const hasUserCreds = !!data.PASSGAGE_USER_EMAIL && !!data.PASSGAGE_USER_PASSWORD;
     
@@ -73,29 +78,62 @@ const envSchema = z.object({
 // Parse and validate environment
 let env: z.infer<typeof envSchema>;
 
-try {
-  env = envSchema.parse(process.env);
-  
-  // Log configuration (without sensitive data)
-  const configInfo = {
-    baseUrl: env.PASSGAGE_BASE_URL,
-    timeout: env.PASSGAGE_TIMEOUT,
-    debug: env.PASSGAGE_DEBUG,
-    transport: env.TRANSPORT_TYPE,
-    nodeEnv: env.NODE_ENV,
-    authMethod: env.PASSGAGE_API_KEY ? 'api-key' : 'user-credentials'
+// Check if we're in Cloudflare Workers environment
+const isCloudflareWorker = typeof globalThis !== 'undefined' && 
+                           typeof globalThis.Response !== 'undefined' && 
+                           typeof globalThis.Request !== 'undefined' &&
+                           typeof process === 'undefined';
+
+if (isCloudflareWorker) {
+  // For Cloudflare Workers, use minimal validation (full validation happens in worker.ts)
+  env = {
+    PASSGAGE_API_KEY: undefined,
+    PASSGAGE_USER_EMAIL: undefined,
+    PASSGAGE_USER_PASSWORD: undefined,
+    PASSGAGE_BASE_URL: 'https://api.passgage.com',
+    PASSGAGE_TIMEOUT: 30000,
+    PASSGAGE_DEBUG: false,
+    TRANSPORT_TYPE: 'http',
+    MCP_DEPLOYMENT_MODE: 'global',
+    MCP_GLOBAL_SESSION_STORAGE: 'kv',
+    HTTP_PORT: 3000,
+    HTTP_HOST: 'localhost',
+    HTTP_PATH: '/mcp',
+    HTTP_CORS: true,
+    RATE_LIMIT_WINDOW_MS: 60000,
+    RATE_LIMIT_MAX_REQUESTS: 100,
+    SESSION_TIMEOUT_HOURS: 8,
+    ENCRYPTION_KEY: undefined,
+    MCP_SECURITY_ENABLED: true,
+    LOG_LEVEL: 'info',
+    LOG_FORMAT: 'json',
+    NODE_ENV: 'production'
   };
-  logger.info('Environment configuration loaded', configInfo);
-} catch (error) {
-  if (error instanceof z.ZodError) {
-    logger.error('Environment validation failed:');
-    error.errors.forEach(err => {
-      logger.error(`  ${err.path.join('.')}: ${err.message}`);
-    });
-  } else {
-    logger.error('Failed to load environment:', { error });
+} else {
+  try {
+    env = envSchema.parse(process.env);
+    
+    // Log configuration (without sensitive data)
+    const configInfo = {
+      baseUrl: env.PASSGAGE_BASE_URL,
+      timeout: env.PASSGAGE_TIMEOUT,
+      debug: env.PASSGAGE_DEBUG,
+      transport: env.TRANSPORT_TYPE,
+      nodeEnv: env.NODE_ENV,
+      authMethod: env.PASSGAGE_API_KEY ? 'api-key' : 'user-credentials'
+    };
+    logger.info('Environment configuration loaded', configInfo);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      logger.error('Environment validation failed:');
+      error.errors.forEach(err => {
+        logger.error(`  ${err.path.join('.')}: ${err.message}`);
+      });
+    } else {
+      logger.error('Failed to load environment:', { error });
+    }
+    process.exit(1);
   }
-  process.exit(1);
 }
 
 /**

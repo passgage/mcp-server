@@ -1,6 +1,6 @@
 import { AuthContext, AuthMode } from '../types/api.js';
 import { logger } from '../config/logger.js';
-import { createHash, randomBytes, createCipheriv, createDecipheriv } from 'crypto';
+import { createHash, randomBytes, createCipheriv, createDecipheriv } from 'node:crypto';
 
 /**
  * Session-based authentication management for remote MCP deployments
@@ -55,8 +55,9 @@ export class SessionManager {
   private encryptionKey: string;
   // @ts-ignore - Used in constructor for cleanup interval
   private _cleanupInterval?: NodeJS.Timeout;
+  private cloudflareEnv?: any; // For Cloudflare Workers environment
 
-  constructor(config: Partial<SessionConfig> = {}) {
+  constructor(config: Partial<SessionConfig> = {}, cloudflareEnv?: any) {
     this.config = {
       sessionTimeout: 8 * 60 * 60 * 1000, // 8 hours
       autoRefresh: true,
@@ -64,6 +65,8 @@ export class SessionManager {
       persistSessions: false,
       ...config
     };
+
+    this.cloudflareEnv = cloudflareEnv;
 
     // Generate or use provided encryption key
     this.encryptionKey = config.encryptionKey || this.generateEncryptionKey();
@@ -73,8 +76,14 @@ export class SessionManager {
       this.setupKVStore(config.kvStore);
     }
 
-    // Cleanup expired sessions every hour
-    this._cleanupInterval = setInterval(() => this.cleanupExpiredSessions(), 60 * 60 * 1000);
+    // Cleanup expired sessions every hour (skip in Cloudflare Workers - handled by cron)
+    const isCloudflareWorker = typeof globalThis !== 'undefined' && 
+                               globalThis.Response && 
+                               globalThis.Request;
+    
+    if (!isCloudflareWorker) {
+      this._cleanupInterval = setInterval(() => this.cleanupExpiredSessions(), 60 * 60 * 1000);
+    }
     
     logger.info('SessionManager initialized', {
       timeout: this.config.sessionTimeout,
@@ -92,10 +101,13 @@ export class SessionManager {
     try {
       switch (kvConfig.type) {
         case 'cloudflare':
-          // In Cloudflare Workers environment, KV is available globally
-          if (typeof globalThis !== 'undefined' && (globalThis as any).PASSGAGE_SESSIONS) {
-            this.kvStore = (globalThis as any).PASSGAGE_SESSIONS;
-            logger.info('Cloudflare KV store connected');
+          // In Cloudflare Workers environment, KV is available via environment
+          if (this.cloudflareEnv?.PASSGAGE_SESSIONS) {
+            this.kvStore = this.createCloudflareKVAdapter(this.cloudflareEnv.PASSGAGE_SESSIONS);
+            logger.info('Cloudflare KV store connected via environment');
+          } else if (typeof globalThis !== 'undefined' && (globalThis as any).PASSGAGE_SESSIONS) {
+            this.kvStore = this.createCloudflareKVAdapter((globalThis as any).PASSGAGE_SESSIONS);
+            logger.info('Cloudflare KV store connected via global');
           } else {
             logger.warn('Cloudflare KV store not available, falling back to memory');
           }
@@ -461,7 +473,33 @@ export class SessionManager {
       console.log(`Cleaned up ${expiredSessions.length} expired sessions`);
     }
   }
-}
 
-// Global session manager instance for remote deployments
-export const sessionManager = new SessionManager();
+  /**
+   * Create Cloudflare KV adapter for session storage
+   */
+  private createCloudflareKVAdapter(kv: any): KVStore {
+    return {
+      async put(key: string, value: string, options?: { expirationTtl?: number }) {
+        const metadata = options?.expirationTtl ? { expirationTtl: options.expirationTtl } : undefined;
+        return await kv.put(key, value, metadata);
+      },
+
+      async get(key: string): Promise<string | null> {
+        return await kv.get(key, 'text');
+      },
+
+      async delete(key: string): Promise<void> {
+        return await kv.delete(key);
+      },
+
+      async list(options?: { prefix?: string }): Promise<{ keys: { name: string }[] }> {
+        const listOptions = options?.prefix ? { prefix: options.prefix } : {};
+        const result = await kv.list(listOptions);
+        // Convert to match KVStore interface
+        return {
+          keys: result.keys.map((key: any) => ({ name: key.name }))
+        };
+      }
+    };
+  }
+}

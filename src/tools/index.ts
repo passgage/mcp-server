@@ -3,11 +3,20 @@ import { Tool, CallToolRequestSchema, ListToolsRequestSchema } from '@modelconte
 import { PassgageAPIClient } from '../api/client.js';
 import { logger } from '../config/logger.js';
 import { BaseTool } from './base.tool.js';
-import * as fs from 'fs/promises';
-import * as path from 'path';
-import { fileURLToPath } from 'url';
+import { SessionManager } from '../utils/session.js';
+import * as fs from 'node:fs/promises';
+import * as path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+// Cloudflare Workers compatibility check
+const isCloudflareWorker = typeof globalThis !== 'undefined' && 
+                           typeof globalThis.Response !== 'undefined' && 
+                           typeof globalThis.Request !== 'undefined' &&
+                           typeof process === 'undefined';
+
+const __dirname = isCloudflareWorker ? 
+                  '/src/tools' :  // Fallback path for Cloudflare Workers
+                  (import.meta.url ? path.dirname(fileURLToPath(import.meta.url)) : '/src/tools');
 
 export interface ToolMetadata {
   name: string;
@@ -24,10 +33,12 @@ export class ToolRegistry {
   private tools = new Map<string, BaseTool>();
   private server: Server;
   private apiClient: PassgageAPIClient;
+  private globalSessionManager?: SessionManager;
 
-  constructor(server: Server, apiClient: PassgageAPIClient) {
+  constructor(server: Server, apiClient: PassgageAPIClient, globalSessionManager?: SessionManager) {
     this.server = server;
     this.apiClient = apiClient;
+    this.globalSessionManager = globalSessionManager;
   }
 
   /**
@@ -104,6 +115,10 @@ export class ToolRegistry {
    */
   private async registerGlobalAuthTools(): Promise<void> {
     try {
+      // Use the global session manager if available, otherwise create one
+      const sessionManager = this.globalSessionManager || this.createSessionManager();
+      
+      // Import and register global authentication tools
       const {
         SessionLoginTool,
         SessionCreateTool,
@@ -112,13 +127,28 @@ export class ToolRegistry {
         SessionSwitchModeTool
       } = await import('./global-auth.tool.js');
       
-      this.registerTool(new SessionLoginTool(this.apiClient));
-      this.registerTool(new SessionCreateTool(this.apiClient));
-      this.registerTool(new SessionStatusTool(this.apiClient));
-      this.registerTool(new SessionListTool(this.apiClient));
-      this.registerTool(new SessionSwitchModeTool(this.apiClient));
+      this.registerTool(new SessionLoginTool(this.apiClient, sessionManager));
+      this.registerTool(new SessionCreateTool(this.apiClient, sessionManager));
+      this.registerTool(new SessionStatusTool(this.apiClient, sessionManager));
+      this.registerTool(new SessionListTool(this.apiClient, sessionManager));
+      this.registerTool(new SessionSwitchModeTool(this.apiClient, sessionManager));
       
-      logger.debug('Global Authentication tools registered');
+      // Import and register session-based HTTP authentication tools
+      const {
+        SessionLoginTool: HttpSessionLoginTool,
+        SessionLoginWithApiKeyTool,
+        SessionSwitchModeTool: HttpSessionSwitchModeTool,
+        SessionStatusTool: HttpSessionStatusTool,
+        SessionLogoutTool
+      } = await import('./session-auth.tool.js');
+      
+      this.registerTool(new HttpSessionLoginTool(this.apiClient, sessionManager));
+      this.registerTool(new SessionLoginWithApiKeyTool(this.apiClient, sessionManager));
+      this.registerTool(new HttpSessionSwitchModeTool(this.apiClient, sessionManager));
+      this.registerTool(new HttpSessionStatusTool(this.apiClient, sessionManager));
+      this.registerTool(new SessionLogoutTool(this.apiClient, sessionManager));
+      
+      logger.info('Global Authentication tools registered successfully');
     } catch (error) {
       logger.error('Failed to register Global Authentication tools:', { error });
     }
@@ -137,36 +167,39 @@ export class ToolRegistry {
     await this.registerLeavesServiceTools();
     await this.registerLeaveTypesServiceTools();
     
-    const toolsDir = path.join(__dirname, 'passgage');
-    
-    try {
-      const files = await fs.readdir(toolsDir);
-      const toolFiles = files.filter(f => f.endsWith('.tool.js') || f.endsWith('.tool.ts'));
+    // Dynamic tool loading - skip in Cloudflare Workers
+    if (!isCloudflareWorker) {
+      const toolsDir = path.join(__dirname, 'passgage');
       
-      for (const file of toolFiles) {
-        // Skip service-specific tool files as we register them manually above
-        if (file.includes('users-service.tool') || file.includes('approvals-service.tool') || 
-            file.includes('file-upload.tool') || file.includes('advanced-search.tool') ||
-            file.includes('user-shifts-service.tool') || file.includes('leaves-service.tool') ||
-            file.includes('leave-types-service.tool')) continue;
+      try {
+        const files = await fs.readdir(toolsDir);
+        const toolFiles = files.filter(f => f.endsWith('.tool.js') || f.endsWith('.tool.ts'));
         
-        try {
-          const modulePath = path.join(toolsDir, file);
-          const module = await import(modulePath);
+        for (const file of toolFiles) {
+          // Skip service-specific tool files as we register them manually above
+          if (file.includes('users-service.tool') || file.includes('approvals-service.tool') || 
+              file.includes('file-upload.tool') || file.includes('advanced-search.tool') ||
+              file.includes('user-shifts-service.tool') || file.includes('leaves-service.tool') ||
+              file.includes('leave-types-service.tool')) continue;
           
-          // Look for exported tool classes
-          for (const exportedItem of Object.values(module)) {
-            if (this.isToolClass(exportedItem)) {
-              const instance = new (exportedItem as any)(this.apiClient);
-              this.registerTool(instance);
+          try {
+            const modulePath = path.join(toolsDir, file);
+            const module = await import(modulePath);
+            
+            // Look for exported tool classes
+            for (const exportedItem of Object.values(module)) {
+              if (this.isToolClass(exportedItem)) {
+                const instance = new (exportedItem as any)(this.apiClient);
+                this.registerTool(instance);
             }
+            }
+          } catch (error) {
+            logger.error(`Failed to load tool from ${file}:`, { error });
           }
-        } catch (error) {
-          logger.error(`Failed to load tool from ${file}:`, { error });
         }
+      } catch (error) {
+        logger.warn('Passgage tools directory not found, skipping auto-discovery');
       }
-    } catch (error) {
-      logger.warn('Passgage tools directory not found, skipping auto-discovery');
     }
   }
   
@@ -406,7 +439,67 @@ export class ToolRegistry {
       }
       
       try {
-        // Check permissions
+        // For global deployments, create session-aware API client if session ID is provided
+        if (this.globalSessionManager && args && args.sessionId) {
+          const sessionId = args.sessionId as string;
+          const authContext = await this.globalSessionManager.getAuthContext(sessionId);
+          
+          if (authContext) {
+            // Create a session-specific API client
+            const sessionAPIClient = new PassgageAPIClient({
+              baseURL: 'https://api.passgage.com', // Default for Cloudflare Workers
+              apiKey: authContext.companyApiKey,
+              timeout: 30000,
+              debug: false
+            });
+            
+            // Manually set the auth context for this session
+            if (authContext.userJwtToken) {
+              (sessionAPIClient as any).authContext = {
+                mode: authContext.mode,
+                companyApiKey: authContext.companyApiKey,
+                userJwtToken: authContext.userJwtToken,
+                userInfo: authContext.userInfo,
+                tokenExpiresAt: authContext.tokenExpiresAt
+              };
+            }
+            
+            // Update the tool's API client temporarily for this request
+            const originalApiClient = (tool as any).apiClient;
+            (tool as any).apiClient = sessionAPIClient;
+            
+            try {
+              // Check permissions with session context
+              const canExecute = await tool.checkPermissions();
+              if (!canExecute.allowed) {
+                return {
+                  content: [{
+                    type: 'text',
+                    text: JSON.stringify({
+                      success: false,
+                      error: canExecute.reason
+                    }, null, 2)
+                  }]
+                };
+              }
+              
+              // Execute tool with session-aware API client
+              const result = await tool.execute(args || {});
+              
+              return {
+                content: [{
+                  type: 'text',
+                  text: JSON.stringify(result, null, 2)
+                }]
+              };
+            } finally {
+              // Restore original API client
+              (tool as any).apiClient = originalApiClient;
+            }
+          }
+        }
+        
+        // Standard execution path for local mode or tools without session
         const canExecute = await tool.checkPermissions();
         if (!canExecute.allowed) {
           return {
@@ -464,5 +557,48 @@ export class ToolRegistry {
    */
   getTool(name: string): BaseTool | undefined {
     return this.tools.get(name);
+  }
+
+  /**
+   * Execute a tool by name with arguments
+   */
+  async callTool(name: string, args: any, context?: any): Promise<any> {
+    const tool = this.tools.get(name);
+    if (!tool) {
+      throw new Error(`Tool '${name}' not found`);
+    }
+
+    logger.info(`Executing tool: ${name}`, { args, context });
+    
+    try {
+      const result = await tool.execute(args);
+      logger.debug(`Tool execution successful: ${name}`, { result });
+      return result;
+    } catch (error: any) {
+      logger.error(`Tool execution failed: ${name}`, { error: error.message, args });
+      throw error;
+    }
+  }
+
+  /**
+   * Create SessionManager instance based on deployment environment
+   */
+  private createSessionManager(): SessionManager {
+    const config = {
+      sessionTimeout: 8 * 60 * 60 * 1000, // 8 hours
+      autoRefresh: true,
+      maxRetries: 3,
+      persistSessions: isCloudflareWorker,
+      encryptionKey: 'default-encryption-key', // Will be overridden by environment
+      kvStore: isCloudflareWorker ? {
+        type: 'cloudflare' as const,
+        namespace: 'PASSGAGE_SESSIONS'
+      } : undefined
+    };
+
+    // In Cloudflare Workers, pass the environment
+    const cloudflareEnv = isCloudflareWorker ? globalThis : undefined;
+    
+    return new SessionManager(config, cloudflareEnv);
   }
 }

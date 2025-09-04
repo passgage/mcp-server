@@ -26,6 +26,10 @@
     "deploy:cloudflare:dev": "npm run build && wrangler deploy --env development",
     "deploy:cloudflare:staging": "npm run build && wrangler deploy --env staging",
     "deploy:cloudflare:prod": "npm run build && wrangler deploy --env production",
+    "deploy:and:monitor": "npm run build && wrangler deploy --env production && wrangler tail --format=pretty",
+    "deploy:and:monitor:prod": "npm run build && wrangler deploy --env production && wrangler tail --format=pretty",
+    "monitor": "wrangler tail --format=pretty",
+    "monitor:prod": "wrangler tail --format=pretty",
     "semantic-release": "semantic-release"
   },
   "keywords": [

@@ -23,6 +23,11 @@ async function bootstrap() {
     // Initialize session manager for global mode
     let sessionManager: SessionManager | undefined;
     if (deploymentMode === 'global') {
+      // Detect Cloudflare Workers environment
+      const isCloudflareWorker = typeof globalThis !== 'undefined' && 
+                                 globalThis.Response && 
+                                 globalThis.Request;
+      
       sessionManager = new SessionManager({
         sessionTimeout: effectiveEnv.SESSION_TIMEOUT_HOURS * 60 * 60 * 1000,
         persistSessions: effectiveEnv.MCP_GLOBAL_SESSION_STORAGE !== 'memory',
@@ -31,9 +36,13 @@ async function bootstrap() {
           type: 'cloudflare',
           namespace: 'PASSGAGE_SESSIONS'
         } : undefined
-      });
+      }, isCloudflareWorker ? globalThis : undefined);
       
-      logger.info('Session manager initialized for global deployment');
+      logger.info('Session manager initialized for global deployment', {
+        sessionStorage: effectiveEnv.MCP_GLOBAL_SESSION_STORAGE,
+        environment: isCloudflareWorker ? 'cloudflare-worker' : 'node',
+        kvEnabled: effectiveEnv.MCP_GLOBAL_SESSION_STORAGE === 'kv'
+      });
     }
     
     // Initialize API client (for local mode or default for global mode)
@@ -79,8 +88,8 @@ async function bootstrap() {
       }
     );
 
-    // Register tools
-    const toolRegistry = new ToolRegistry(server, apiClient);
+    // Register tools with session manager for global mode
+    const toolRegistry = new ToolRegistry(server, apiClient, sessionManager);
     await toolRegistry.registerAll();
     logger.info(`Registered ${toolRegistry.getToolCount()} tools`);
 

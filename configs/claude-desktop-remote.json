@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "passgage-global": {
+      "command": "/Users/gokhanalmas/.nvm/versions/node/v18.15.0/bin/npx",
+      "args": [
+        "@pyroprompts/mcp-stdio-to-streamable-http-adapter"
+      ],
+      "env": {
+        "URI": "https://passgage-global-mcp-server.passgage.workers.dev",
+        "MCP_NAME": "passgage-global-adapter"
+      }
+    }
+  }
+}
