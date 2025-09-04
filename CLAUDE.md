@@ -23,26 +23,67 @@ This is a comprehensive Passgage API MCP (Model Context Protocol) Server built w
 
 ## Project Architecture
 
-### Core Components
-- **`src/main.ts`** - Main MCP server entry point (production executable)
-- **`src/api/client.ts`** - Passgage API client with JWT auth, auto-refresh, error handling
+### Modern MCP Server Architecture
+The server uses a **registry-based architecture** with three main registries for managing different MCP capabilities:
+
+- **`src/main.ts`** - Modern bootstrap entry point with registry orchestration
+- **`src/index.ts`** - Legacy class-based entry point (`PassgageMCPServer`) - still functional
+- **`src/api/client.ts`** - Passgage API client with JWT auth, auto-refresh, session management
 - **`src/types/api.ts`** - Complete TypeScript definitions for Passgage API
-- **`src/config/`** - Configuration management (env.ts, logger.ts, index.ts)
-- **`src/tools/index.ts`** - Tool registry and orchestration
-- **`src/resources/index.ts`** - Resource registry for MCP resources
-- **`src/prompts/index.ts`** - Prompt registry with built-in troubleshooting/onboarding prompts
+- **`src/config/`** - Configuration management with logger using Pino
+- **`src/transports/`** - Transport layer (stdio, HTTP) for MCP protocol
+- **`src/utils/`** - Validation, error handling, session management utilities
 
-### Tool Structure (Modern Architecture)
-- **`src/tools/passgage/`** - Service-specific tool implementations (users-service.tool.ts, etc.)
-- **`src/tools/auth.tool.ts`** - Authentication tools (login, logout, refresh, status)
-- **`src/tools/base.tool.ts`** - Base tool class with common functionality
-- **Legacy tools** - `auth.ts`, `crud.ts`, `specialized.ts` (may be deprecated)
+### Registry System (Modern Architecture)
+- **`ToolRegistry` (`src/tools/index.ts`)** - Auto-discovers and manages 130+ tools with permission checking
+- **`ResourceRegistry` (`src/resources/index.ts`)** - Provides server health, configuration resources
+- **`PromptRegistry` (`src/prompts/index.ts`)** - Built-in workflow prompts (onboarding, troubleshooting, analytics)
 
-### MCP Tools Structure
-The server provides 133 total tools:
-- **8 Authentication tools** - JWT session and mode management
-- **125 CRUD tools** - 5 operations × 25 services (list, get, create, update, delete)
-- **8 Specialized tools** - File upload, bulk approvals, search, dashboard stats
+### Tool Architecture
+- **`src/tools/base.tool.ts`** - Abstract base class with consistent response patterns and permission checking
+- **`src/tools/auth.tool.ts`** - Authentication tools (login, logout, refresh, mode switching)
+- **`src/tools/session-auth.tool.ts`** - Session-based authentication for remote deployments
+- **`src/tools/ping.tool.ts`** - Health check and connectivity testing
+- **`src/tools/prompt-discovery.tool.ts`** - Prompt discovery and help tools
+- **Service-specific tools in `src/tools/passgage/`**:
+  - `users-service.tool.ts` - User CRUD + device/zone assignment
+  - `approvals-service.tool.ts` - Approval workflows + bulk operations
+  - `leaves-service.tool.ts` - Leave management + balance checking
+  - `file-upload.tool.ts` - File handling with presigned URLs
+  - `advanced-search.tool.ts` - Cross-resource search with query builder
+
+### Legacy Tool System (Still Available)
+- **`src/tools/auth.ts`** - Legacy auth tool handlers
+- **`src/tools/crud.ts`** - Legacy CRUD operation handlers  
+- **`src/tools/specialized.ts`** - Legacy specialized operation handlers
+
+### Modern MCP Capabilities
+
+#### Resources System
+The server exposes resources via MCP resource protocol:
+- **`passgage://health`** - Real-time server health, memory usage, API connectivity status
+- **`passgage://config`** - Non-sensitive server configuration (transport, debug mode, versions)
+
+#### Prompts System  
+Built-in interactive prompts for common workflows:
+- **Troubleshooting prompts** - `troubleshoot` - guided API debugging with context
+- **Onboarding prompts** - `onboard` - setup walkthrough for new deployments  
+- **API Explorer prompts** - `explore` - discover capabilities by feature area
+- **Workflow prompts** - Leave management, employee onboarding, department analytics
+- **Prompt Discovery tools** - `passgage_list_prompts`, `passgage_suggest_prompts`, `passgage_prompt_help`
+
+#### Session Management (Remote Deployments)
+Advanced authentication handling for cloud/remote MCP deployments:
+- **SessionManager** (`src/utils/session.ts`) - secure credential storage without environment exposure
+- **Session-based auth tools** - create/manage authentication sessions with timeout
+- **Credential encryption** - secure storage of API keys and user passwords
+- **Auto-cleanup** - expired session management and memory optimization
+
+### MCP Tools Structure  
+The server provides 130+ total tools:
+- **6-8 Authentication tools** - JWT session, mode management, session auth
+- **125+ CRUD tools** - 5 operations × 25+ services (list, get, create, update, delete)
+- **10+ Specialized tools** - File upload, bulk approvals, search, dashboard stats, prompt discovery
 
 ## Configuration
 
@@ -82,16 +123,40 @@ PASSGAGE_DEBUG=false
 ## Development Patterns
 
 ### MCP Server Architecture
-The server uses a class-based architecture (`PassgageMCPServer`) with:
-- **Stdio Transport** - Communication via stdin/stdout for MCP protocol
-- **Tool Registration** - Tools are grouped by category and registered with MCP SDK
-- **Request Routing** - Tool calls are routed to appropriate handlers based on naming patterns
+The server supports **dual architectures** for different deployment needs:
+
+#### Modern Registry Architecture (`src/main.ts`)
+- **Bootstrap function** - Initializes API client and three registries
+- **ToolRegistry** - Auto-discovers tools, handles permissions, manages 130+ tools
+- **ResourceRegistry** - Exposes health/config resources via MCP resource protocol
+- **PromptRegistry** - Provides workflow prompts with context-aware rendering
+- **Transport abstraction** - Supports stdio, HTTP transports via `src/transports/`
+
+#### Legacy Class Architecture (`src/index.ts`)  
+- **PassgageMCPServer class** - Single class handling all MCP operations
+- **Manual tool registration** - Explicit tool creation and routing
+- **Prefix-based routing** - Tool calls routed by name pattern matching
+- **Direct stdio transport** - Uses MCP SDK `StdioServerTransport` directly
 
 ### Adding New Tools
-1. Define tool schema with `inputSchema` in appropriate file under `src/tools/`
+
+#### Modern Approach (Recommended)
+1. **Create tool class** extending `BaseTool` in appropriate service directory (`src/tools/passgage/`)
+2. **Implement required methods** - `getMetadata()`, `getInputSchema()`, `execute()`, `toMCPTool()`
+3. **Add to service registration** in `ToolRegistry.registerXServiceTools()` method
+4. **Auto-discovery** - Tools are automatically discovered and permission-checked
+
+#### Legacy Approach  
+1. Define tool schema with `inputSchema` in `src/tools/auth.ts|crud.ts|specialized.ts`
 2. Implement handler function with consistent error handling pattern
 3. Add tool name pattern to router logic in `src/index.ts:61-81` (prefix matching)
 4. Update TypeScript types in `src/types/api.ts` if adding new API endpoints
+
+#### Tool Development Patterns
+- **Extend BaseTool** - Provides consistent response patterns (`successResponse`, `errorResponse`) 
+- **Permission checking** - Automatic validation against company/user mode requirements
+- **Validation** - Use Zod schemas for input validation with descriptive error messages
+- **Error handling** - Use `PassgageError` hierarchy for consistent error responses
 
 ### Tool Naming Convention
 - **Auth tools**: `passgage_login`, `passgage_refresh_token`, `passgage_auth_status`
@@ -130,13 +195,28 @@ All tools return consistent format:
 - Run single test suite: `npm test __tests__/utils/errors.test.ts`
 
 ### MCP Integration
-Add to Claude Desktop config:
+Add to Claude Desktop config (choose architecture):
+
+#### Modern Registry Architecture (Recommended)
+```json
+{
+  "mcpServers": {
+    "passgage": {
+      "command": "node", 
+      "args": ["./dist/main.js"],
+      "env": { "PASSGAGE_API_KEY": "your_key" }
+    }
+  }
+}
+```
+
+#### Legacy Class Architecture
 ```json
 {
   "mcpServers": {
     "passgage": {
       "command": "node",
-      "args": ["./dist/index.js"],
+      "args": ["./dist/index.js"], 
       "env": { "PASSGAGE_API_KEY": "your_key" }
     }
   }
@@ -151,10 +231,16 @@ Add to Claude Desktop config:
 - TypeScript 5.6+ with strict mode and Node16 module resolution
 
 ### Build Output
-- **dist/** - Compiled JavaScript output from TypeScript compilation
-- **dist/main.js** - Main executable entry point for production (CLI binary)
-- **dist/index.js** - Legacy entry point (may be deprecated)
+- **dist/** - Compiled JavaScript output from TypeScript compilation  
+- **dist/main.js** - Modern registry-based entry point (recommended for new deployments)
+- **dist/index.js** - Legacy class-based entry point (still maintained for compatibility)
+- **package.json** - Binary configured as `passgage-mcp-server` pointing to `./dist/main.js`
 - The server must be built (`npm run build`) before production deployment
+
+### Development vs Production Entry Points
+- **Development**: Use `npm run dev` (runs `tsx src/main.ts`) or `npm run dev:main`
+- **Legacy development**: `npm run dev:old` (runs `tsx src/index.ts`)
+- **Production**: `npm start` (runs `node dist/main.js`) or `node dist/index.js` for legacy
 
 ### Environment Requirements
 - **Node.js >=22.0.0** - Required for MCP SDK compatibility (see package.json:61)
@@ -207,9 +293,25 @@ When working with tests, be aware of:
 - **Circular references** - Handle with WeakSet pattern in JSON serialization
 
 #### Build Process
-- Entry point is `src/main.ts` (not `src/index.ts`)
-- Binary target is `dist/main.js` configured in package.json
-- Build must complete successfully before running tests or deployment
+- **Primary entry point**: `src/main.ts` (modern registry architecture)
+- **Legacy entry point**: `src/index.ts` (class-based architecture)  
+- **Binary target**: `dist/main.js` configured in package.json
+- **Build requirement**: Must complete successfully before running tests or deployment
+
+#### Permission System Architecture
+The modern architecture includes sophisticated permission management:
+- **BaseTool.checkPermissions()** - Automatic validation against auth modes
+- **Tool metadata** - Declarative permission requirements (`companyMode`, `userMode`)  
+- **Runtime validation** - Tools check current authentication context before execution
+- **Error responses** - Consistent permission denied messages with actionable guidance
+
+#### Enhanced Error Handling
+Recent improvements to error handling (`src/utils/errors.ts`):
+- **PassgageError hierarchy** - Structured error types (Auth, Validation, NotFound, etc.)
+- **Circular reference protection** - Safe JSON serialization using WeakSet pattern
+- **Constructor overloading** - Flexible error creation with (message, code, details) or (message, code, statusCode, details)
+- **API error mapping** - Automatic conversion of HTTP status codes to appropriate error types
+- **Tool error formatting** - Consistent error response structure across all tools
 
 # important-instruction-reminders
 Do what has been asked; nothing more, nothing less.

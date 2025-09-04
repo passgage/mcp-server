@@ -17,14 +17,27 @@ const envSchema = z.object({
   PASSGAGE_TIMEOUT: z.string().transform(Number).default('30000'),
   PASSGAGE_DEBUG: z.string().transform(v => v === 'true').default('false'),
   
+  // Deployment Mode Configuration
+  MCP_DEPLOYMENT_MODE: z.enum(['local', 'global', 'auto']).default('auto'),
+  MCP_GLOBAL_SESSION_STORAGE: z.enum(['memory', 'kv', 'redis']).default('memory'),
+  MCP_SECURITY_ENABLED: z.string().transform(v => v === 'true').default('false'),
+  
   // Transport Configuration
   TRANSPORT_TYPE: z.enum(['stdio', 'http', 'websocket']).default('stdio'),
   
-  // HTTP Transport Options (for future use)
+  // HTTP Transport Options
   HTTP_PORT: z.string().transform(Number).optional().default('3000'),
   HTTP_HOST: z.string().optional().default('localhost'),
   HTTP_PATH: z.string().optional().default('/mcp'),
   HTTP_CORS: z.string().transform(v => v === 'true').optional().default('true'),
+  
+  // Global Mode - Rate Limiting
+  RATE_LIMIT_WINDOW_MS: z.string().transform(Number).default('60000'),
+  RATE_LIMIT_MAX_REQUESTS: z.string().transform(Number).default('100'),
+  
+  // Global Mode - Session Management
+  SESSION_TIMEOUT_HOURS: z.string().transform(Number).default('8'),
+  ENCRYPTION_KEY: z.string().optional(),
   
   // Logging
   LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
@@ -85,7 +98,68 @@ try {
   process.exit(1);
 }
 
-export { env };
+/**
+ * Auto-detect deployment mode based on environment
+ */
+function detectDeploymentMode(): 'local' | 'global' {
+  // Check for Cloudflare Workers environment
+  if (typeof globalThis !== 'undefined' && (globalThis as any).Response && (globalThis as any).Request) {
+    return 'global';
+  }
+  
+  // Check for explicit global mode indicators
+  if (process.env.CLOUDFLARE_WORKER === 'true' || 
+      process.env.CF_PAGES === '1' ||
+      process.env.MCP_DEPLOYMENT_MODE === 'global') {
+    return 'global';
+  }
+  
+  // Check for explicit local mode
+  if (process.env.MCP_DEPLOYMENT_MODE === 'local') {
+    return 'local';
+  }
+  
+  // Default to local for traditional Node.js environments
+  return 'local';
+}
 
-// Export type for use in other files
+/**
+ * Get effective configuration based on deployment mode
+ */
+function getEffectiveConfig(env: z.infer<typeof envSchema>) {
+  const actualMode = env.MCP_DEPLOYMENT_MODE === 'auto' ? detectDeploymentMode() : env.MCP_DEPLOYMENT_MODE;
+  
+  // Apply mode-specific defaults
+  const config = { ...env };
+  
+  if (actualMode === 'global') {
+    // Global mode defaults
+    config.TRANSPORT_TYPE = 'http';
+    config.MCP_SECURITY_ENABLED = true;
+    
+    // Enable session storage if in global mode
+    if (typeof globalThis !== 'undefined' && (globalThis as any).PASSGAGE_SESSIONS) {
+      config.MCP_GLOBAL_SESSION_STORAGE = 'kv';
+    }
+  } else {
+    // Local mode defaults
+    config.TRANSPORT_TYPE = 'stdio';
+    config.MCP_SECURITY_ENABLED = false;
+    config.MCP_GLOBAL_SESSION_STORAGE = 'memory';
+  }
+  
+  return {
+    ...config,
+    deploymentMode: actualMode
+  };
+}
+
+// Get effective configuration
+const effectiveEnv = getEffectiveConfig(env);
+
+export { env, effectiveEnv };
+
+// Export types
 export type Environment = z.infer<typeof envSchema>;
+export type DeploymentMode = 'local' | 'global';
+export type EffectiveEnvironment = Environment & { deploymentMode: DeploymentMode };

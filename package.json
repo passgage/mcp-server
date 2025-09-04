@@ -11,11 +11,21 @@
     "dev:main": "tsx src/main.ts",
     "start": "node dist/main.js",
     "start:old": "node dist/index.js",
+    "start:local": "MCP_DEPLOYMENT_MODE=local node dist/main.js",
+    "start:global": "MCP_DEPLOYMENT_MODE=global node dist/main.js",
+    "dev:local": "MCP_DEPLOYMENT_MODE=local tsx src/main.ts",
+    "dev:global": "MCP_DEPLOYMENT_MODE=global tsx src/main.ts",
     "test": "NODE_OPTIONS='--experimental-vm-modules' jest",
+    "test:local": "MCP_DEPLOYMENT_MODE=local npm test",
+    "test:global": "MCP_DEPLOYMENT_MODE=global npm test",
     "lint": "eslint src --ext .ts,.tsx",
     "lint:fix": "eslint src --ext .ts,.tsx --fix",
     "type-check": "tsc --noEmit",
     "create-tool": "tsx scripts/create-tool.ts",
+    "deploy:cloudflare": "npm run build && wrangler deploy",
+    "deploy:cloudflare:dev": "npm run build && wrangler deploy --env development",
+    "deploy:cloudflare:staging": "npm run build && wrangler deploy --env staging",
+    "deploy:cloudflare:prod": "npm run build && wrangler deploy --env production",
     "semantic-release": "semantic-release"
   },
   "keywords": [
@@ -41,6 +51,7 @@
     "zod": "^3.23.0"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250903.0",
     "@semantic-release/changelog": "^6.0.3",
     "@semantic-release/git": "^10.0.1",
     "@semantic-release/github": "^11.0.5",
@@ -58,7 +69,7 @@
     "typescript": "^5.6.3"
   },
   "engines": {
-    "node": ">=22.0.0"
+    "node": ">=18.0.0"
   },
   "repository": {
     "type": "git",
@@ -73,9 +84,15 @@
     "README.md",
     "LICENSE",
     "server.json",
-    "CHANGELOG.md"
+    "CHANGELOG.md",
+    "wrangler.toml",
+    "CLOUDFLARE_DEPLOYMENT.md",
+    "USER_CONNECTION_GUIDE.md",
+    ".env.local.example",
+    ".env.global.example"
   ],
   "bin": {
     "passgage-mcp-server": "./dist/main.js"
-  }
+  },
+  "preferGlobal": true
 }

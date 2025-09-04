@@ -1,0 +1,63 @@
+# Cloudflare Workers configuration for Global Passgage MCP Server
+name = "passgage-global-mcp-server"
+main = "dist/cloudflare/worker.js"
+compatibility_date = "2024-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Worker Settings
+[build]
+command = "npm run build"
+
+# Environment Variables (non-sensitive)
+[vars]
+PASSGAGE_BASE_URL = "https://api.passgage.com"
+PASSGAGE_TIMEOUT = "30000"
+PASSGAGE_DEBUG = "false"
+RATE_LIMIT_WINDOW_MS = "60000"
+RATE_LIMIT_MAX_REQUESTS = "100"
+SESSION_TIMEOUT_HOURS = "8"
+
+# KV Storage for session persistence
+[[kv_namespaces]]
+binding = "PASSGAGE_SESSIONS"
+preview_id = "preview_passgage_sessions"
+id = "production_passgage_sessions"
+
+# Scheduled Tasks (cron triggers)
+[triggers]
+crons = ["0 */6 * * *"]  # Every 6 hours for cleanup
+
+# Development environment
+[env.development]
+name = "passgage-global-mcp-server-dev"
+vars = { PASSGAGE_DEBUG = "true", RATE_LIMIT_MAX_REQUESTS = "500" }
+[[env.development.kv_namespaces]]
+binding = "PASSGAGE_SESSIONS"
+id = "dev_passgage_sessions"
+
+# Staging environment  
+[env.staging]
+name = "passgage-global-mcp-server-staging"
+vars = { PASSGAGE_BASE_URL = "https://staging-api.passgage.com", PASSGAGE_DEBUG = "true" }
+[[env.staging.kv_namespaces]]
+binding = "PASSGAGE_SESSIONS"
+id = "staging_passgage_sessions"
+
+# Production environment
+[env.production]
+name = "passgage-global-mcp-server"
+vars = { RATE_LIMIT_MAX_REQUESTS = "50" }  # More restrictive in production
+[[env.production.kv_namespaces]]
+binding = "PASSGAGE_SESSIONS" 
+id = "production_passgage_sessions"
+
+# Security and Performance
+[placement]
+mode = "smart"
+
+# Limits
+[limits]
+cpu_ms = 50000  # 50 seconds max execution time
+
+# Node.js compatibility for crypto and other Node modules
+node_compat = true

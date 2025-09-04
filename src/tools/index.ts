@@ -74,7 +74,7 @@ export class ToolRegistry {
    * Register built-in tools (auth, system, etc.)
    */
   private async registerBuiltinTools(): Promise<void> {
-    // Import and register auth tools
+    // Import and register standard auth tools
     const { 
       AuthTool, 
       RefreshTokenTool, 
@@ -91,9 +91,37 @@ export class ToolRegistry {
     this.registerTool(new SwitchToCompanyModeTool(this.apiClient));
     this.registerTool(new SwitchToUserModeTool(this.apiClient));
     
+    // Import and register global session auth tools
+    await this.registerGlobalAuthTools();
+    
     // Import and register system tools
     const { PingTool } = await import('./ping.tool.js');
     this.registerTool(new PingTool());
+  }
+
+  /**
+   * Register Global Authentication tools for multi-user deployments
+   */
+  private async registerGlobalAuthTools(): Promise<void> {
+    try {
+      const {
+        SessionLoginTool,
+        SessionCreateTool,
+        SessionStatusTool,
+        SessionListTool,
+        SessionSwitchModeTool
+      } = await import('./global-auth.tool.js');
+      
+      this.registerTool(new SessionLoginTool(this.apiClient));
+      this.registerTool(new SessionCreateTool(this.apiClient));
+      this.registerTool(new SessionStatusTool(this.apiClient));
+      this.registerTool(new SessionListTool(this.apiClient));
+      this.registerTool(new SessionSwitchModeTool(this.apiClient));
+      
+      logger.debug('Global Authentication tools registered');
+    } catch (error) {
+      logger.error('Failed to register Global Authentication tools:', { error });
+    }
   }
 
   /**

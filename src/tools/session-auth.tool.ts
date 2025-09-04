@@ -166,7 +166,7 @@ export async function handleSessionSwitchMode(args: any) {
       return errorResponse('Mode switch failed: Invalid session or missing credentials for target mode', 'INVALID_SESSION');
     }
 
-    const authContext = sessionManager.getAuthContext(sessionId);
+    const authContext = await sessionManager.getAuthContext(sessionId);
     
     return successResponse({
       sessionId,
@@ -200,12 +200,12 @@ export async function handleSessionStatus(args: any) {
   try {
     const { sessionId } = args;
 
-    const session = sessionManager.getSession(sessionId);
+    const session = await sessionManager.getSession(sessionId);
     if (!session) {
       return errorResponse('Session not found or expired', 'SESSION_NOT_FOUND');
     }
 
-    const credentials = sessionManager.getCredentials(sessionId);
+    const credentials = await sessionManager.getCredentials(sessionId);
     const availableModes: string[] = [];
     
     if (credentials?.apiKey) availableModes.push('company');
