@@ -1,7 +1,7 @@
 # Cloudflare Workers configuration for Global Passgage MCP Server
 name = "passgage-global-mcp-server"
-main = "dist/cloudflare/worker.js"
-compatibility_date = "2024-01-01"
+main = "dist/worker.js"
+compatibility_date = "2024-09-23"
 compatibility_flags = ["nodejs_compat"]
 
 # Worker Settings
@@ -16,12 +16,13 @@ PASSGAGE_DEBUG = "false"
 RATE_LIMIT_WINDOW_MS = "60000"
 RATE_LIMIT_MAX_REQUESTS = "100"
 SESSION_TIMEOUT_HOURS = "8"
+ENCRYPTION_KEY = "default-encryption-key-change-in-production"
 
 # KV Storage for session persistence
 [[kv_namespaces]]
 binding = "PASSGAGE_SESSIONS"
-preview_id = "preview_passgage_sessions"
-id = "production_passgage_sessions"
+preview_id = "b8c52dc0e7654916a4392307457a9f3e"
+id = "b8c52dc0e7654916a4392307457a9f3e"
 
 # Scheduled Tasks (cron triggers)
 [triggers]
@@ -30,34 +31,70 @@ crons = ["0 */6 * * *"]  # Every 6 hours for cleanup
 # Development environment
 [env.development]
 name = "passgage-global-mcp-server-dev"
-vars = { PASSGAGE_DEBUG = "true", RATE_LIMIT_MAX_REQUESTS = "500" }
+
+[env.development.vars]
+MCP_DEPLOYMENT_MODE = "global"
+PASSGAGE_BASE_URL = "https://api.passgage.com"
+PASSGAGE_TIMEOUT = "30000"
+PASSGAGE_DEBUG = "true"
+RATE_LIMIT_WINDOW_MS = "60000"
+RATE_LIMIT_MAX_REQUESTS = "500"
+SESSION_TIMEOUT_HOURS = "8"
+ENCRYPTION_KEY = "dev-encryption-key-change-in-production"
 [[env.development.kv_namespaces]]
 binding = "PASSGAGE_SESSIONS"
-id = "dev_passgage_sessions"
+id = "b8c52dc0e7654916a4392307457a9f3e"
 
 # Staging environment  
 [env.staging]
 name = "passgage-global-mcp-server-staging"
-vars = { PASSGAGE_BASE_URL = "https://staging-api.passgage.com", PASSGAGE_DEBUG = "true" }
+
+[env.staging.vars]
+MCP_DEPLOYMENT_MODE = "global"
+PASSGAGE_BASE_URL = "https://staging-api.passgage.com"
+PASSGAGE_TIMEOUT = "30000"
+PASSGAGE_DEBUG = "true"
+RATE_LIMIT_WINDOW_MS = "60000"
+RATE_LIMIT_MAX_REQUESTS = "100"
+SESSION_TIMEOUT_HOURS = "8"
+ENCRYPTION_KEY = "staging-encryption-key-change-in-production"
 [[env.staging.kv_namespaces]]
 binding = "PASSGAGE_SESSIONS"
-id = "staging_passgage_sessions"
+id = "b8c52dc0e7654916a4392307457a9f3e"
 
 # Production environment
 [env.production]
 name = "passgage-global-mcp-server"
-vars = { RATE_LIMIT_MAX_REQUESTS = "50" }  # More restrictive in production
+
+[env.production.vars]
+MCP_DEPLOYMENT_MODE = "global"
+PASSGAGE_BASE_URL = "https://api.passgage.com"
+PASSGAGE_TIMEOUT = "30000"
+PASSGAGE_DEBUG = "false"
+RATE_LIMIT_WINDOW_MS = "60000"
+RATE_LIMIT_MAX_REQUESTS = "50"
+SESSION_TIMEOUT_HOURS = "8"
+ENCRYPTION_KEY = "prod-encryption-key-change-in-production"
+
+[env.production.observability]
+enabled = true
+
 [[env.production.kv_namespaces]]
 binding = "PASSGAGE_SESSIONS" 
-id = "production_passgage_sessions"
+id = "b8c52dc0e7654916a4392307457a9f3e"
 
 # Security and Performance
 [placement]
 mode = "smart"
 
-# Limits
-[limits]
-cpu_ms = 50000  # 50 seconds max execution time
-
 # Node.js compatibility for crypto and other Node modules
 node_compat = true
+
+# Observability configuration for automatic Workers Logs
+[observability]
+enabled = true
+
+[observability.logs]
+enabled = true
+invocation_logs = true
+head_sampling_rate = 1.0
